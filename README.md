@@ -55,8 +55,7 @@ Can you assemble the **dream tech team**, or will you sink the company with bad 
 
 ## 👥 Credits
 
-- **Programming & Design** – YourName  
-- **Art & Pixel Assets** – YourName  
-- **Music & SFX** – ComposerName  
+- **Programming & Design** – Igor Sinchuk   
+- **Release date** - 2025
 
 ---
