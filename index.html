@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HR Papers — IT Hiring Desk (Shortcuts + Summary + Events + Big Roles)</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#1f2a27; --panel:#24342f; --slot:#1a2421; --ink:#e3d6b0; --accent:#e27a52; --accent2:#9dc39b; --warn:#e25b5b; --ok:#6ed06e; --line:#3c4a45; --shadow:#0f1513; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background: radial-gradient(1200px 700px at 50% 20%, #25332e 0%, #111 70%); color:var(--ink); font-family: "VT323", monospace; letter-spacing:.3px}
+  .crt{position:fixed; inset:0; pointer-events:none; background: repeating-linear-gradient( to bottom, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 2px, rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px); mix-blend-mode:overlay}
+  .wrap{max-width:1200px; margin:20px auto; padding:12px; background:var(--bg); border:4px solid #0b1412; border-radius:10px; box-shadow:0 14px 40px var(--shadow), inset 0 0 0 2px #0e201b}
+  header{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:2px solid var(--line); background:var(--panel)}
+  header .title{display:flex; gap:10px; align-items:center}
+  header .title .ttext{font-family:"Press Start 2P", system-ui; font-size:14px; color:var(--accent2); letter-spacing:1px}
+  header .day{display:flex; gap:10px; align-items:center}
+  .chip{ padding:6px 10px; border:2px solid var(--line); background:var(--slot)}
+  
+  .grid{display:grid; grid-template-columns: 260px 1fr 380px; gap:12px; margin-top:12px}
+  .panel{background:var(--panel); border:2px solid var(--line); min-height:520px; position:relative; box-shadow: inset 0 0 0 2px #1b2b25}
+  .panel h3{margin:0; padding:8px 10px; border-bottom:2px solid var(--line); color:var(--accent2); font-family:"Press Start 2P"; font-size:11px}
+  /* LEFT */
+  .stats{display:grid; grid-template-rows:auto 1fr}
+  .statbox{padding:10px; display:grid; gap:8px}
+  .meter{display:flex; align-items:center; gap:8px}
+  .meter .label{width:140px; opacity:.9}
+  .meter .val{padding:4px 8px; background:var(--slot); border:2px solid var(--line); min-width:70px; text-align:right}
+  .rules{margin-top:8px; padding:8px; background:#1b2623; border:2px solid #334742; font-size:18px}
+  /* CENTER */
+  .mail{display:grid; grid-template-rows:auto auto 1fr}
+  .mail .fromline,.mail .subject{padding:8px 12px; border-bottom:2px solid var(--line); display:flex; justify-content:space-between; gap:10px}
+  .paper{margin:10px; background:#efe6c7; color:#2c2a26; border:2px solid #d2c79c; box-shadow:0 6px 0 #b4aa80; padding:12px; line-height:1.25; position:relative}
+  .paper .cvhead{display:grid; grid-template-columns:110px 1fr; gap:12px; margin-bottom:8px}
+  .portrait{width:110px; height:110px; border:3px solid #b4aa80; background:#506e63; position:relative; overflow:hidden; border-radius:6px}
+  .porimg{width:100%; height:100%; object-fit:cover; display:block}
+  .kv{display:grid; grid-template-columns:170px 1fr; gap:4px; font-weight:bold}
+  .note{margin-top:8px; border-top:2px dashed #c7bd99; padding-top:8px; font-size:18px}
+  .stamp{position:absolute; right:18px; top:18px; font-family:"Press Start 2P"; padding:10px 14px; border:4px solid currentColor; transform:rotate(-6deg) scale(.1); opacity:0; pointer-events:none}
+  .stamp.ok{color:#1ee679; background:rgba(30,230,121,.1)} .stamp.no{color:#ff6b6b; background:rgba(255,107,107,.08)} .stamp.show{animation:stamp .35s ease-out forwards}
+  @keyframes stamp{0%{opacity:0; transform:rotate(-6deg) scale(.1)} 70%{opacity:1; transform:rotate(-6deg) scale(1.05)} 100%{opacity:1; transform:rotate(-6deg) scale(1)}}
+  /* RIGHT */
+  .jobs{display:grid; grid-template-rows:auto auto auto 1fr}
+  .roleSel{ padding:8px 10px; border-bottom:2px solid var(--line); display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  select{background:var(--slot); color:var(--ink); border:2px solid var(--line); padding:6px; font-family:inherit}
+  .card{margin:10px; border:2px solid #3a4b45; background:#1b2623; padding:10px}
+  .req{display:grid; gap:6px; margin-top:8px}
+  .req .item{display:flex; justify-content:space-between; align-items:center; background:#14201c; border:2px solid #2a3a35; padding:6px 8px}
+  .item .badge{padding:2px 6px; border:2px solid #3a4b45; background:#0e1815; min-width:78px; text-align:center}
+  .mismatch{color:var(--warn)} .match{color:var(--ok)}
+  /* FOOT */
+  .footer{margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .btn{border:3px solid #000; padding:10px 16px; font-family:"Press Start 2P"; font-size:12px; cursor:pointer; box-shadow:0 4px 0 #000, inset 0 0 0 2px rgba(255,255,255,.06); letter-spacing:1px; text-transform:uppercase}
+  .btn.hire{background:#1e4020; color:#baf3b2; border-color:#0b1a0b}
+  .btn.reject{background:#5a201c; color:#ffd1c9; border-color:#220b0a}
+  .btn:active{transform:translateY(2px); box-shadow:0 2px 0 #000, inset 0 0 0 2px rgba(255,255,255,.06)}
+  .mini{font-size:12px} .muted{opacity:.85}
+  .row{display:flex; align-items:center; gap:8px}
+  input[type="range"]{ accent-color:#8bd9a5 }
+  /* START & SUMMARY OVERLAYS */
+  .overlay{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.82); z-index:9999}
+  .card{background:#1b2b25; border:3px solid #0c1a16; padding:24px; max-width:700px; text-align:center; box-shadow:0 14px 40px #000}
+  .bar{height:18px; background:#2a3d37; margin:8px 0; position:relative}
+  .bar>div{position:absolute; left:0; top:0; bottom:0; background:#8bd9a5}
+  .legend{display:flex; gap:12px; justify-content:center}
+  .legend .dot{width:12px; height:12px; display:inline-block; border:2px solid #000}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <div class="ttext">HR PAPERS — HIRING TERMINAL</div>
+      <div class="row mini">
+        <label class="chip" style="display:flex;align-items:center;gap:8px">🔊 Sound
+          <input type="checkbox" id="soundToggle" checked>
+        </label>
+        <label class="chip" style="display:flex;align-items:center;gap:8px">Vol
+          <input type="range" id="volume" min="0" max="1" step="0.01" value="0.6" style="width:120px">
+        </label>
+        <div class="chip">CAREER <span id="career">0</span></div>
+        
+      </div>
+    </div>
+    <div class="day">
+      <div class="chip">DAY <span id="day">1</span></div>
+      <div class="chip">TIME <span id="time">00:00</span></div>
+      <div class="chip">CREDITS <span id="credits">200</span></div>
+      <div class="chip">SCORE <span id="score">0</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <section class="panel stats">
+      <h3>CONSOLE</h3>
+      <div class="statbox">
+        <div class="meter"><div class="label mini">Applicants Left</div><div class="val" id="left">0</div></div>
+        <div class="meter"><div class="label mini">Accuracy</div><div class="val" id="acc">100%</div></div>
+        <div class="meter"><div class="label mini">Warnings</div><div class="val" id="warns">0</div></div>
+        <div class="rules mini">
+          <div><strong>Rules:</strong> (H = hire, R = reject, Space = reject/next)</div>
+          <ol id="rulesList" style="margin:6px 0 0 16px; padding:0"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTER -->
+    <section class="panel mail">
+      <h3>INBOX / CV</h3>
+      <div class="fromline">
+        <div>From: <span id="fromName">—</span> &lt;<span id="fromEmail">—</span>&gt;</div>
+        <div class="muted mini">ID: <span id="cid">—</span></div>
+      </div>
+      <div class="subject">
+        <div>Subject: Application for <strong id="applyFor">—</strong></div>
+        <div class="muted mini">Received: <span id="recv">—</span></div>
+      </div>
+      <div class="paper" id="paper">
+        <div class="stamp" id="stamp">STAMP</div>
+        <div class="cvhead">
+          <div class="portrait" id="portrait">
+            <img id="portraitImg" class="porimg" alt="portrait">
+          </div>
+          <div class="kv">
+            <div>Name</div><div id="cvName">—</div>
+            <div>Age</div><div id="cvAge">—</div>
+            <div>Applied Role</div><div id="cvRole">—</div>
+            <div>Key Skills</div><div id="cvSkills">—</div>
+            <div>Experience (yrs)</div><div id="cvExp">—</div>
+            <div>Certifications</div><div id="cvCerts">—</div>
+            <div>Red Flags</div><div id="cvFlags">—</div>
+          </div>
+        </div>
+        <div class="note" id="cvNote">—</div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="panel jobs">
+      <h3>VACANCY BOARD</h3>
+      <div class="roleSel">
+        <div class="mini">Select vacancy to evaluate:</div>
+        <select id="roleSelect"></select>
+        <div class="chip mini">Quota: <span id="quotaView">—</span></div>
+      </div>
+      <div class="card">
+        <div class="mini muted">REQUIRED SKILLS</div>
+        <div class="req" id="reqList"></div>
+      </div>
+      <div class="card">
+        <div class="mini muted">DAY RULES (Extra Checks)</div>
+        <ul id="dayRules" class="mini" style="margin:6px 0 0 18px; padding:0"></ul>
+      </div>
+      <div class="card">
+        <div class="mini muted">DISCREPANCIES</div>
+        <div id="diffBox" class="mini">—</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer">
+    <button class="btn" id="btnHelp" style="padding:6px 25px">HELP</button>
+    <button class="btn hire" id="btnHire" disabled>HIRE</button>
+    <button class="btn reject" id="btnReject" disabled>REJECT</button>
+    <!-- <button class="btn" id="btnExport">Export CSV</button> -->
+    <div class="mini muted" id="status">Press START to initialize audio and begin Day 1.</div>
+  </div>
+</div>
+<div class="crt" aria-hidden="true"></div>
+
+<!-- START OVERLAY -->
+<div class="overlay" id="startOverlay">
+  <div class="card">
+    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px">HR PAPERS — START</div>
+    <div class="mini" style="margin-bottom:14px">Click Start to enable audio and initialize the terminal. Shortcuts: H/R/Space.</div>
+    <button class="btn" id="btnStart" onclick="window.__startGame && window.__startGame()">START</button>
+  </div>
+</div>
+
+<!-- SUMMARY OVERLAY -->
+<div class="overlay" id="summaryOverlay" style="display:none">
+  <div class="card" id="summaryCard">
+    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px">DAY SUMMARY</div>
+    <div id="summaryBody" class="mini" style="text-align:left"></div>
+    <div class="legend mini" style="margin-top:10px">
+      <span><span class="dot" style="background:#6ed06e"></span> Correct</span>
+      <span><span class="dot" style="background:#e25b5b"></span> Mistakes</span>
+      <span><span class="dot" style="background:#8bd9a5"></span> Hires</span>
+      <span><span class="dot" style="background:#e27a52"></span> Rejects</span>
+    </div>
+    <div style="margin-top:14px"><button class="btn" id="btnContinue">CONTINUE</button></div>
+  </div>
+</div>
+
+<!-- HELP OVERLAY -->
+<div class="overlay" id="helpOverlay" style="display:none">
+  <div class="card" style="text-align:left; max-width:820px">
+    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px; text-align:center">HOW TO PLAY</div>
+    <div class="mini">
+      <ol style="margin:0 0 10px 18px">
+        <li><strong>Read the email + CV</strong> in the center panel.</li>
+        <li><strong>Select the correct vacancy</strong> on the right (it should match the applicant’s “Applied Role”).</li>
+        <li>Compare CV skills to the <strong>Required Skills</strong> list. The board shows <span class="match">OK</span> or <span class="mismatch">MISSING</span>.</li>
+        <li>Follow <strong>Day Rules</strong> (experience minimums, special conditions, events).</li>
+        <li><strong>Decide:</strong> HIRE if all required skills + rules are satisfied and quotas allow; otherwise REJECT.</li>
+      </ol>
+      <div style="margin:8px 0"><strong>Scoring</strong>: Correct decisions +10 credits (and score). Mistakes −10 credits (+warning). Meet all quotas for a day to earn a bonus.</div>
+      <div style="margin:8px 0"><strong>Story Events</strong>: <em>Spam CV</em> (reject), <em>CEO’s Nephew</em> (don’t succumb to pressure if they fail checks), <em>Legend</em> (excellent candidate, but still match the right role).</div>
+      <div style="margin:8px 0"><strong>Hotkeys</strong>: H = Hire, R = Reject, <kbd>Space</kbd> = quick Reject/Next, <kbd>?</kbd> = open/close Help.</div>
+      <div style="margin:8px 0">Use <strong>Export CSV</strong> to download a log of your run.</div>
+    </div>
+    <div style="text-align:center; margin-top:12px"><button class="btn" id="btnCloseHelp">CLOSE</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ===================== ROLES (expanded) ===================== */
+  const VACANCIES = {
+    // Office & PM
+    "Office Manager":    { required: ["Organization","Excel","Scheduling"] },
+    "Product Manager":   { required: ["Backlog","Roadmap","Stakeholders","Analytics"] },
+    "Scrum Master":      { required: ["Scrum","Facilitation","JIRA"] },
+    "Tech Writer":       { required: ["Docs","API Writing","Editing"] },
+    // QA
+    "QA Engineer":       { required: ["Manual Testing","Postman","JIRA"] },
+    "QA Automation":     { required: ["Selenium","JUnit","CI","API Testing"] },
+    // Frontend
+    "Frontend Dev":      { required: ["JavaScript","HTML","CSS","Git"] },
+    "React Developer":   { required: ["JavaScript","React","HTML","CSS","Git"] },
+    "Angular Developer": { required: ["JavaScript","Angular","TypeScript","RxJS","Git"] },
+    "Vue Developer":     { required: ["JavaScript","Vue","HTML","CSS","Git"] },
+    // Backend
+    "Backend Dev":       { required: ["Node.js","APIs","Databases","Git"] },
+    "Java Developer":    { required: ["Java","Spring","APIs","Databases","Git"] },
+    "Python Developer":  { required: ["Python","Django","APIs","Databases","Git"] },
+    "Go Developer":      { required: ["Go","APIs","Concurrency","Git"] },
+    ".NET Developer":    { required: ["C#","ASP.NET","APIs","SQL","Git"] },
+    // Mobile
+    "iOS Developer":     { required: ["Swift","UIKit","REST","Xcode"] },
+    "Android Developer": { required: ["Kotlin","Android SDK","REST","Gradle"] },
+    "Flutter Developer": { required: ["Dart","Flutter","REST","CI"] },
+    // Data & ML
+    "Data Engineer":     { required: ["ETL","SQL","Python","Airflow"] },
+    "Data Scientist":    { required: ["Python","Pandas","ML","Statistics"] },
+    "ML Engineer":       { required: ["Python","TensorFlow","PyTorch","MLOps"] },
+    // Infra & Security
+    "DevOps Engineer":   { required: ["CI/CD","Docker","Kubernetes","Linux"] },
+    "SRE":               { required: ["Monitoring","Incident Response","Automation","Linux"] },
+    "Cloud Architect":   { required: ["AWS","Terraform","Networking","Security"] },
+    "Security Engineer": { required: ["Threat Modeling","OWASP","SIEM","Linux"] },
+    "Linux Administrator":{ required: ["Linux","Bash","Networking","Monitoring"] },
+    "Windows Administrator":{ required: ["AD","PowerShell","GPO","Networking"] },
+    "DBA":               { required: ["SQL","Backup","Indexing","Replication"] },
+    // Design & Support
+    "UI/UX Designer":    { required: ["Figma","Wireframes","Prototyping"] },
+    "Support Engineer":  { required: ["Troubleshooting","Tickets","Communication"] },
+    // Leadership
+    "Tech Lead":         { required: ["Leadership","Architecture","Agile","Mentoring"] }
+  };
+
+  /* ===================== DAYS & RULES (with events awareness) ===================== */
+  const DAYS = [
+    { time: 100, applicants: 8,
+      roles:["Office Manager","QA Engineer","Frontend Dev","React Developer","Backend Dev","Product Manager","Support Engineer"],
+      quotas:{"QA Engineer":1},
+      rules:["All required skills must be present.","Beware of spam CVs."],
+      check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); return out; } },
+    { time: 120, applicants: 9,
+      roles:["QA Engineer","Frontend Dev","React Developer","Backend Dev","Java Developer","Python Developer","UI/UX Designer"],
+      quotas:{"Frontend Dev":1,"Java Developer":1},
+      rules:["At least 2 years experience for dev roles.","Java roles require Spring.","No nepotism hires."],
+      check:(c,chosen)=>{ const out=[]; const devRoles=["Frontend Dev","React Developer","Backend Dev","Java Developer","Python Developer"]; if(devRoles.includes(chosen) && c.years<2) out.push("Experience < 2y"); if(chosen==="Java Developer" && !c.skills.includes("Spring")) out.push("Missing Spring for Java Dev"); if(c.event==='ceoNephew') out.push('Nepotism pressure'); return out; } },
+    { time: 130, applicants: 10,
+      roles:["Backend Dev","DevOps Engineer","Linux Administrator","SRE","Cloud Architect","Security Engineer","DBA","Tech Lead"],
+      quotas:{"DevOps Engineer":1,"Linux Administrator":1,"Tech Lead":1},
+      rules:["Zero red flags allowed.","DevOps requires Docker+Kubernetes.","Linux Admin needs Bash & Networking.","Tech Lead requires Mentoring and 4+ years.","Watch for legendary wildcard candidates."],
+      check:(c,chosen)=>{ const out=[]; if(c.redFlags.length>0) out.push("Has red flags"); if(chosen==="DevOps Engineer"){ const ok = c.skills.includes("Docker") && c.skills.includes("Kubernetes"); if(!ok) out.push("DevOps missing Docker+K8s"); }
+        if(chosen==="Linux Administrator"){ if(!c.skills.includes("Bash")) out.push("Linux Admin missing Bash"); if(!c.skills.includes("Networking")) out.push("Linux Admin missing Networking"); }
+        if(chosen==="Tech Lead"){ if(c.years<4) out.push("Tech Lead needs 4+ years"); if(!c.skills.includes("Mentoring")) out.push("Tech Lead missing Mentoring"); }
+        if(c.event==='legend' && chosen!==c.applyFor) out.push('Legendary talent misrouted');
+        return out; } },
+  ];
+
+  /* ===================== RANDOM DATA ===================== */
+  const FIRST = [
+    "Alice","Borys","Kateryna","Dmytro","Elena","Ihor","Maksym","Olena","Taras","Yuliia","John","Marta","Yuki","Igor","Sofia","Carlos","Ananya","Liu","Omar","Fatima","Jonas","Emma","Noah","Mia","Ethan","Aarav","Zara","Mateo","Nina","Hanna","Piotr","Kamil","Lina","Akira","Sara","Diego","Inna","Petro","Mykola","Oksana","Viktor","Roman","Anna","Andrii","Tetiana","Vera","Leon","Milan","Sven","Greta","Chloe","Lucas","Aisha","Noor","Ravi","Priya","Chen","Wei","Min","Yara"
+  ];
+  const LAST  = [
+    "Moroz","Tkachenko","Ivanenko","Sydorenko","Vostrikova","Shevchenko","Kravets","Bondar","Pavlenko","Melnyk","Peterson","Ivanov","Chen","Kowalski","Singh","Lopez","Tanaka","Smith","Dubois","Novak","Johnson","Hernandez","Kumar","Andersson","Garcia","Koval","Orlov","Takahashi","Kim","Rahman","Costa","Silva","Rossi","Moreau","Nowak","López","Popov","Smirnov","Horvat","Nagy","Kravchuk","Mazur","Fischer","Santos","Müller","Bianchi","Rossi","Lindberg","Johansson","Berg","Martin","Clark","Baker","Ahmed","Abbas","Hassan","El-Sayed","Zhang","Zhao"
+  ];
+  const CITIES = ["Kyiv","Lviv","Warsaw","Tokyo","Delhi","São Paulo","Berlin","Madrid","Seoul","Toronto","London","Paris","Stockholm","Lisbon","Istanbul","Prague","Vienna","Copenhagen","Helsinki","Bucharest"];
+  const EDUC   = ["B.Sc. Computer Science","M.Sc. Software Engineering","B.A. Economics","Self‑taught","Bootcamp Grad","PhD (ABD)","B.Sc. Information Systems","M.Eng."];
+  const NOTES = [
+    "Completed a bug bash, reported high‑quality issues.",
+    "Built a portfolio with responsive layouts.",
+    "Handled office budgets and vendor contracts.",
+    "Mentored juniors informally in the last team.",
+    "Configured CI/CD and containerized apps.",
+    "Maintained Linux servers and improved monitoring.",
+    "Authored internal docs and runbooks.",
+    "Improved performance of a React app by 30%.",
+    "Reduced cloud spend by 18% via rightsizing.",
+    "Automated database backups and PITR testing."
+  ];
+  const RED_FLAGS = ["Job hopping","Team conflict","Missed deadlines","Plagiarized portfolio","Low code quality","Unverifiable employment","Security incident"];
+
+  function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function emailOf(name){ return name.toLowerCase().replace(/[^a-z]/g,'.')+"@example.com"; }
+  function timeStamp(){ const h = 9+Math.floor(Math.random()*8); const m = String(Math.floor(Math.random()*60)).padStart(2,'0'); return `${h}:${m}`; }
+
+  // === Avatar icons (3 sets x 12 each) ===
+  function avatarShape(index,c){
+    const shapes = [
+      (c)=>`<circle cx='32' cy='32' r='28' fill='${c.bg}'/><circle cx='22' cy='26' r='4' fill='${c.fg}'/><circle cx='42' cy='26' r='4' fill='${c.fg}'/><rect x='20' y='40' width='24' height='6' rx='3' fill='${c.fg}'/>`,
+      (c)=>`<rect x='6' y='6' width='52' height='52' rx='10' fill='${c.bg}'/><circle cx='26' cy='28' r='4' fill='${c.fg}'/><circle cx='40' cy='28' r='4' fill='${c.fg}'/><path d='M22 42h20' stroke='${c.fg}' stroke-width='5' stroke-linecap='round'/>`,
+      (c)=>`<polygon points='32,4 60,60 4,60' fill='${c.bg}'/><circle cx='24' cy='30' r='4' fill='${c.fg}'/><circle cx='40' cy='30' r='4' fill='${c.fg}'/><path d='M22 46h20' stroke='${c.fg}' stroke-width='5' stroke-linecap='round'/>`,
+      (c)=>`<circle cx='32' cy='32' r='30' fill='${c.bg}'/><rect x='18' y='18' width='28' height='22' rx='6' fill='${c.fg}'/><rect x='22' y='46' width='20' height='6' rx='3' fill='${c.fg2}'/>`,
+      (c)=>`<rect x='4' y='12' width='56' height='40' rx='10' fill='${c.bg}'/><circle cx='24' cy='30' r='4' fill='${c.fg}'/><circle cx='40' cy='30' r='4' fill='${c.fg}'/><rect x='20' y='40' width='24' height='6' rx='3' fill='${c.fg2}'/>`,
+      (c)=>`<circle cx='32' cy='32' r='30' fill='${c.bg}'/><rect x='18' y='40' width='28' height='10' rx='5' fill='${c.fg2}'/><circle cx='24' cy='26' r='4' fill='${c.fg}'/><circle cx='40' cy='26' r='4' fill='${c.fg}'/>`,
+      (c)=>`<rect x='8' y='8' width='48' height='48' rx='14' fill='${c.bg}'/><path d='M20 44c6-8 20-8 26 0' stroke='${c.fg2}' stroke-width='5' stroke-linecap='round'/><circle cx='24' cy='28' r='4' fill='${c.fg}'/><circle cx='40' cy='28' r='4' fill='${c.fg}'/>`,
+      (c)=>`<circle cx='32' cy='32' r='30' fill='${c.bg}'/><circle cx='24' cy='30' r='5' fill='${c.fg}'/><circle cx='40' cy='30' r='5' fill='${c.fg}'/><path d='M24 44 L40 44' stroke='${c.fg2}' stroke-width='5' stroke-linecap='round'/>`,
+      (c)=>`<polygon points='12,8 52,8 60,52 4,52' fill='${c.bg}'/><circle cx='24' cy='28' r='4' fill='${c.fg}'/><circle cx='40' cy='28' r='4' fill='${c.fg}'/><path d='M22 42h20' stroke='${c.fg2}' stroke-width='5' stroke-linecap='round'/>`,
+      (c)=>`<rect x='6' y='6' width='52' height='52' rx='6' fill='${c.bg}'/><circle cx='22' cy='28' r='4' fill='${c.fg}'/><circle cx='42' cy='28' r='4' fill='${c.fg}'/><rect x='20' y='40' width='24' height='6' rx='3' fill='${c.fg2}'/>`,
+      (c)=>`<circle cx='32' cy='32' r='30' fill='${c.bg}'/><path d='M20 42c8-6 16-6 24 0' stroke='${c.fg2}' stroke-width='5' stroke-linecap='round'/><circle cx='24' cy='26' r='4' fill='${c.fg}'/><circle cx='40' cy='26' r='4' fill='${c.fg}'/>`,
+      (c)=>`<rect x='10' y='10' width='44' height='44' rx='12' fill='${c.bg}'/><circle cx='24' cy='28' r='4' fill='${c.fg}'/><circle cx='40' cy='28' r='4' fill='${c.fg}'/><path d='M22 42h20' stroke='${c.fg}' stroke-width='5' stroke-linecap='round'/>`
+    ];
+    return shapes[index % shapes.length](c);
+  }
+  const PALETTES = [
+    {bg:'#3b7a57', fg:'#f2f2f2', fg2:'#c7ffd8'},
+    {bg:'#5b4a8c', fg:'#ffe4f2', fg2:'#d4c1ff'},
+    {bg:'#8c3b3b', fg:'#ffe5e0', fg2:'#ffc3b0'},
+    {bg:'#2d6a8e', fg:'#e8f6ff', fg2:'#bfe6ff'},
+    {bg:'#6a7a3b', fg:'#f7ffe0', fg2:'#e0ffb3'},
+    {bg:'#a35c3d', fg:'#fff2e6', fg2:'#ffd7bf'},
+  ];
+  const SET_STYLES = [ // 3 visual styles
+    (idx)=>({ ...PALETTES[idx % PALETTES.length] }), // soft flat
+    (idx)=>({ bg:`hsl(${(idx*37)%360},45%,35%)`, fg:'#f2f7ff', fg2:'#c7defa' }), // colorful
+    (idx)=>({ bg:'#222', fg:'#cfcfcf', fg2:'#888' }), // monochrome
+  ];
+  function avatarDataUri(idx){
+    const style = SET_STYLES[idx % SET_STYLES.length](idx);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='110' height='110' viewBox='0 0 64 64'>${avatarShape(idx, style)}</svg>`;
+    return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+  }
+
+  function randEvent(){
+    const r = Math.random();
+    if(r<0.08) return 'spam';
+    if(r<0.12) return 'ceoNephew';
+    if(r<0.16) return 'legend';
+    return null;
+  }
+
+  function genApplicant(roles, missingChance){
+    const role = rand(roles);
+    const required = (VACANCIES[role]?.required||[]).slice();
+    const skills = new Set(required);
+    const allLists = Object.keys(VACANCIES).map(k=>VACANCIES[k].required);
+    const allSkills = [].concat.apply([], allLists);
+    const pool = allSkills.filter(s=>!skills.has(s));
+    if(Math.random()<missingChance && required.length){ const drop = rand(required); skills.delete(drop); }
+    for(let i=0;i<Math.floor(Math.random()*2)+1;i++) skills.add(rand(pool));
+    const name = rand(FIRST)+" "+rand(LAST);
+    const years = 1 + Math.floor(Math.random()*10);
+    const certs = Math.random()<0.5 ? ["ISTQB","AWS CP","LPIC-1","CKA","OCJP","AZ-900","GCP ACE"].slice(0, 1+Math.floor(Math.random()*3)) : [];
+    const redFlags = Math.random()<0.18 ? [rand(RED_FLAGS)] : [];
+    const city = rand(CITIES);
+    const edu = rand(EDUC);
+    const idx = Math.floor(Math.random()*2000);
+    const event = randEvent();
+    const eventNote = event==='spam'? '⚠️ Looks like a bulk/spam submission.' : event==='ceoNephew'? '☎️ CEO mentioned this candidate earlier today.' : event==='legend'? '⭐ Rumored high performer, unusual background.' : '';
+    return {
+      name, email: emailOf(name), id:"C-"+(1000+Math.floor(Math.random()*9000)), ts: timeStamp(),
+      age: 22+Math.floor(Math.random()*25), applyFor: role, skills:[...skills], years, certs, redFlags,
+      note: `${city} • ${edu}. ${rand(NOTES)} ${eventNote}`, img: avatarDataUri(idx), event
+    };
+  }
+
+  /* ===================== AUDIO & SETTINGS ===================== */
+  let audioCtx = null;
+  const settings = { sound: JSON.parse(localStorage.getItem('hr_sound') ?? 'true'), volume: parseFloat(localStorage.getItem('hr_volume') ?? '0.6') };
+  const soundToggle = document.getElementById('soundToggle');
+  const volumeRange = document.getElementById('volume');
+  function ensureAudio(){ if(!audioCtx){ const C = window.AudioContext||window.webkitAudioContext; try{ if(C) audioCtx = new C(); }catch(e){ audioCtx=null; } } }
+  function beep(freq=400, dur=0.08, type='square', gain=0.06){ if(!audioCtx || !settings.sound) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=gain*settings.volume; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+dur); }
+  function stampFx(ok=true){ if(!audioCtx || !settings.sound) return; const base= ok? 180:120; beep(base,0.06,'square',0.09); setTimeout(()=>beep(base/2,0.09,'sawtooth',0.06),60); }
+  function wrongFx(){ beep(110,0.15,'sawtooth',0.08); setTimeout(()=>beep(90,0.15,'square',0.06),120); }
+  soundToggle.checked = settings.sound; volumeRange.value = String(settings.volume);
+  soundToggle.addEventListener('change', ()=>{ settings.sound = soundToggle.checked; localStorage.setItem('hr_sound', JSON.stringify(settings.sound)); });
+  volumeRange.addEventListener('input', ()=>{ settings.volume = parseFloat(volumeRange.value); localStorage.setItem('hr_volume', String(settings.volume)); });
+
+  /* ===================== CAREER (Persistent) ===================== */
+  const CAREER = {
+    score: parseInt(localStorage.getItem('hr_career_score')||'0',10),
+    credits: parseInt(localStorage.getItem('hr_career_credits')||'0',10),
+    warnings: parseInt(localStorage.getItem('hr_career_warn')||'0',10),
+  };
+  function saveCareer(){ localStorage.setItem('hr_career_score', CAREER.score); localStorage.setItem('hr_career_credits', CAREER.credits); localStorage.setItem('hr_career_warn', CAREER.warnings); }
+
+  /* ===================== LOG & CSV ===================== */
+  const resultsLog = [];
+  function exportCSV(){
+    const header = ['day','name','applied_role','evaluated_as','decision','correct','missing_required','rule_violations','credits_after','time_left'];
+    const rows = resultsLog.map(r=>[
+      r.day, r.name, r.role, r.chosen, r.decision, r.correct,
+      '"'+String(r.missing||'').replaceAll('"','""')+'"',
+      '"'+String(r.violations||'').replaceAll('"','""')+'"',
+      r.creditsAfter, r.timeLeft
+    ]);
+    const csv = [header.join(','), ...rows.map(a=>a.join(','))].join('');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'hr-papers-results.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+  /* ===================== STATE ===================== */
+  let dayIndex=0, applicants=[], idx=0, score=0, warnings=0, credits=200; let dayTimer=null, timeLeft=0; let quotas={}; let started=false;
+  let dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
+
+  /* ===================== DOM & HELPERS ===================== */
+  const el = id=>document.getElementById(id);
+  const stamp = el('stamp'); const roleSelect = el('roleSelect'); const reqList = el('reqList');
+
+  function setStats(){
+    el('left').textContent = Math.max(0, (applicants.length - idx));
+    const attempts = score + warnings; const acc = attempts? Math.round((score/attempts)*100):100;
+    el('acc').textContent = acc+"%"; el('warns').textContent = warnings; el('credits').textContent = credits; el('score').textContent = score; el('day').textContent = dayIndex+1; el('career').textContent = CAREER.score;
+    const qv = quotas[roleSelect.value]; el('quotaView').textContent = (qv===undefined? '—' : qv);
+  }
+
+  function renderRoleOptions(roles){ roleSelect.innerHTML=""; roles.forEach(r=>{ const opt=document.createElement('option'); opt.value=r; opt.textContent=r; roleSelect.appendChild(opt); }); }
+  function renderReqs(role){ const needs = VACANCIES[role]?.required || []; reqList.innerHTML=""; needs.forEach(req=>{ const row=document.createElement('div'); row.className='item'; row.innerHTML = `<span>${req}</span><span class="badge" id="need-${cssSafe(req)}">—</span>`; reqList.appendChild(row); }); }
+  function cssSafe(s){ return String(s).replace(/[^a-z0-9]+/gi,'_'); }
+  function renderRuleList(day){ const ul = el('dayRules'); ul.innerHTML=""; DAYS[day].rules.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); }); }
+
+  function renderApplicant(){
+    if(idx>=applicants.length){ endDay(); return; }
+    const c = applicants[idx];
+    el('fromName').textContent=c.name; el('fromEmail').textContent=c.email; el('cid').textContent=c.id; el('recv').textContent=c.ts;
+    el('applyFor').textContent=c.applyFor; el('cvName').textContent=c.name; el('cvAge').textContent=c.age; el('cvRole').textContent=c.applyFor;
+    el('cvSkills').textContent=c.skills.join(', '); el('cvNote').textContent=c.note; el('cvExp').textContent=c.years; el('cvCerts').textContent=(c.certs.join(', ')||'—'); el('cvFlags').textContent=(c.redFlags.join(', ')||'—');
+    const imgEl = el('portraitImg'); imgEl.src=c.img; imgEl.alt = `Avatar of ${c.name}`;
+    roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.'; setStats();
+  }
+
+  function missingFor(candidate, role){ const needs = VACANCIES[role]?.required || []; return needs.filter(req=>!candidate.skills.includes(req)); }
+  function updateDiff(){ if(idx>=applicants.length) return {miss:[], extraViol:[]}; const c=applicants[idx]; const role=roleSelect.value; const needs = VACANCIES[role]?.required || []; needs.forEach(req=>{ const b=el('need-'+cssSafe(req)); if(!b) return; if(c.skills.includes(req)){ b.textContent='OK'; b.className='badge match'; } else { b.textContent='MISSING'; b.className='badge mismatch'; } }); const miss = missingFor(c,role); const extraViol = DAYS[dayIndex].check(c, role); const message = [ (miss.length? ('Missing: '+miss.join(', ')) : 'No missing required skills.'), (extraViol.length? (' Rules: '+extraViol.join('; ')) : '') ].join(''); el('diffBox').textContent = message || '—'; return {miss, extraViol}; }
+  roleSelect.addEventListener('change', ()=>{ if(!started) return; updateDiff(); setStats(); beep(750,0.05,'triangle',0.02); });
+
+  function verdict(decision){ if(!started) return; const c = applicants[idx]; const chosen = roleSelect.value; const {miss} = updateDiff(); const extra = DAYS[dayIndex].check(c, c.applyFor);
+    let correct = true;
+    if(chosen !== c.applyFor) correct = false;
+    if(decision===true){ const q = quotas[c.applyFor]; if(q!==undefined && q<=0) correct=false; }
+    const missingApplied = missingFor(c, c.applyFor);
+    if(decision===true && (missingApplied.length>0 || extra.length>0)) correct=false;
+    if(decision===false && (missingApplied.length===0 && extra.length===0)) correct=false;
+
+    if(correct){ score++; dayStats.correct++; credits += 10; CAREER.score++; CAREER.credits += 10; if(decision===true && quotas[c.applyFor]!==undefined){ quotas[c.applyFor]--; } stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; stampFx(decision); el('status').textContent = '✅ Good call.'; }
+    else { warnings++; dayStats.mistakes++; credits -= 10; CAREER.warnings++; CAREER.credits -= 10; stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; wrongFx(); el('status').textContent = '❌ Incorrect judgment.'; }
+
+    decision? dayStats.hires++ : dayStats.rejects++;
+
+    resultsLog.push({ day: dayIndex+1, name:c.name, role:c.applyFor, chosen, decision:decision?'hire':'reject', correct, missing: missingApplied.join('; '), violations: extra.join('; '), creditsAfter: credits, timeLeft });
+    saveCareer(); setStats();
+    setTimeout(()=>{ idx++; renderApplicant(); }, 650);
+  }
+
+  function endDay(){
+    clearInterval(dayTimer);
+    showSummary();
+  }
+
+  function showSummary(){
+    const total = dayStats.hires + dayStats.rejects || 1;
+    const s = document.getElementById('summaryOverlay');
+    const b = document.getElementById('summaryBody');
+    const pct = (n)=>Math.round((n/total)*100);
+    b.innerHTML = `
+      <div>Hires: ${dayStats.hires} • Rejects: ${dayStats.rejects} • Correct: ${dayStats.correct} • Mistakes: ${dayStats.mistakes}</div>
+      <div style="margin-top:10px">Accuracy: <strong>${pct(dayStats.correct)}%</strong></div>
+      <div class="mini" style="margin:10px 0 4px">Hires</div>
+      <div class="bar"><div style="width:${pct(dayStats.hires)}%"></div></div>
+      <div class="mini" style="margin:10px 0 4px">Rejects</div>
+      <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.rejects)}%; background:#e27a52"></div></div>
+      <div class="mini" style="margin:10px 0 4px">Correct vs Mistakes</div>
+      <div class="bar"><div style="width:${pct(dayStats.correct)}%; background:#6ed06e"></div></div>
+      <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.mistakes)}%; background:#e25b5b"></div></div>
+    `;
+    s.style.display='flex';
+  }
+
+  function endGame(){
+    const s = document.getElementById('summaryBody');
+    s.innerHTML += `<div style='margin-top:12px'><strong>Campaign complete!</strong> Final Credits: ${credits}. Career — Score: ${CAREER.score}, Credits: ${CAREER.credits}, Warnings: ${CAREER.warnings}.</div>`;
+  }
+
+  function nextDay(){
+    const unmet = Object.entries(quotas).filter(([r,n])=> n>0);
+    let bonus=0, penalty=0;
+    if(unmet.length===0){ bonus = 30; credits += bonus; CAREER.credits += bonus; }
+    else { penalty = 10*unmet.length; credits -= penalty; CAREER.credits -= penalty; }
+    saveCareer();
+
+    dayIndex++;
+    if(dayIndex < DAYS.length){ startDay(); }
+    else { endGame(); }
+  }
+
+  function startDay(){
+    const cfg = DAYS[dayIndex];
+    applicants = Array.from({length: cfg.applicants}, ()=> genApplicant(cfg.roles, 0.4));
+    idx = 0; quotas = {...cfg.quotas};
+    dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
+    renderRoleOptions(cfg.roles); renderRuleList(dayIndex);
+    timeLeft = cfg.time; updateTimeUi(); clearInterval(dayTimer);
+    dayTimer = setInterval(()=>{ timeLeft--; updateTimeUi(); if(timeLeft<=0){ clearInterval(dayTimer); endDay(); } }, 1000);
+    el('btnHire').disabled=false; el('btnReject').disabled=false; roleSelect.disabled=false;
+    el('status').textContent = `Day ${dayIndex+1} — Meet quotas before time runs out.`;
+    document.getElementById('summaryOverlay').style.display='none';
+    renderApplicant(); setStats();
+  }
+
+  function updateTimeUi(){ const m = Math.max(0, Math.floor(timeLeft/60)); const s = Math.max(0, timeLeft%60); el('time').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+
+  /* ===================== START & CONTINUE ===================== */
+  const startOverlay = document.getElementById('startOverlay');
+const btnStart = document.getElementById('btnStart');
+const btnContinue = document.getElementById('btnContinue');
+const btnHelp = document.getElementById('btnHelp');
+const helpOverlay = document.getElementById('helpOverlay');
+const btnCloseHelp = document.getElementById('btnCloseHelp');
+
+// Expose a robust starter for inline onclick and listeners
+window.__startGame = function(){
+  try{
+    ensureAudio(); if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume().catch(()=>{}); }
+    started = true; startOverlay.style.display='none';
+    if(window.requestAnimationFrame){ requestAnimationFrame(()=>{ try{ startDay(); }catch(err){ console.error('startDay error', err); el('status').textContent='Start failed: '+err; } }); }
+    else { setTimeout(()=>{ try{ startDay(); }catch(err){ console.error('startDay error', err); el('status').textContent='Start failed: '+err; } }, 0); }
+  }catch(e){ console.error('StartGame error', e); el('status').textContent='Start error: '+e; }
+};
+
+// Keep listener too (belt & suspenders)
+if(btnStart){ btnStart.addEventListener('click', ()=>{ window.__startGame(); }); }
+if(btnContinue){ btnContinue.addEventListener('click', ()=>{ nextDay(); document.getElementById('summaryOverlay').style.display='none'; }); }
+if(btnHelp){ btnHelp.addEventListener('click', ()=>{ helpOverlay.style.display='flex'; }); }
+if(btnCloseHelp){ btnCloseHelp.addEventListener('click', ()=>{ helpOverlay.style.display='none'; }); }
+if(helpOverlay){ helpOverlay.addEventListener('click', (e)=>{ if(e.target===helpOverlay) helpOverlay.style.display='none'; }); }
+
+/* ===================== Keyboard Shortcuts ===================== */
+  document.addEventListener('keydown', (e)=>{
+    // Help toggle works anytime
+    if(e.key==='?'){
+      e.preventDefault();
+      if(helpOverlay){ helpOverlay.style.display = (helpOverlay.style.display==='flex'?'none':'flex'); }
+      return;
+    }
+    if(!started) return;
+    if(e.target && (e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA')) return;
+    if(e.key==='h' || e.key==='H'){ e.preventDefault(); document.getElementById('btnHire').click(); }
+    if(e.key==='r' || e.key==='R'){ e.preventDefault(); document.getElementById('btnReject').click(); }
+    if(e.code==='Space'){ e.preventDefault(); document.getElementById('btnReject').click(); } // quick reject/next
+  });
+
+  /* ===================== INIT ===================== */
+  (function seed(){ el('left').textContent='0'; el('acc').textContent='100%'; el('warns').textContent='0'; el('credits').textContent='200'; el('score').textContent='0'; el('day').textContent='1'; el('time').textContent='00:00'; el('career').textContent = CAREER.score; })();
+
+  // Buttons
+  el('btnHire').addEventListener('click', ()=>verdict(true));
+  el('btnReject').addEventListener('click', ()=>verdict(false));
+  el('btnExport').addEventListener('click', exportCSV);
+})();
+</script>
+</body>
+</html>
