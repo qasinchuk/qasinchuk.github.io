@@ -4,22 +4,25 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Cv, Please!</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
   :root{ --bg:#1f2a27; --panel:#24342f; --slot:#1a2421; --ink:#e3d6b0; --accent:#e27a52; --accent2:#9dc39b; --warn:#e25b5b; --ok:#6ed06e; --line:#3c4a45; --shadow:#0f1513; }
   *{box-sizing:border-box}
   html,body{height:100%}
+  html{ overflow-anchor: none; }
+  body{ overflow-anchor: none; overflow: hidden; }
   body{margin:0; background: radial-gradient(1200px 700px at 50% 20%, #25332e 0%, #111 70%); color:var(--ink); font-family: "VT323", monospace; letter-spacing:.3px}
   .crt{position:fixed; inset:0; pointer-events:none; background: repeating-linear-gradient( to bottom, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 2px, rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px); mix-blend-mode:overlay}
-  .wrap{max-width:1200px; margin:20px auto; padding:12px; background:var(--bg); border:4px solid #0b1412; border-radius:10px; box-shadow:0 14px 40px var(--shadow), inset 0 0 0 2px #0e201b}
+  .wrap{max-width:1200px; margin:8px auto; padding:12px; background:var(--bg); border:4px solid #0b1412; border-radius:10px; box-shadow:0 14px 40px var(--shadow), inset 0 0 0 2px #0e201b; min-height: calc(100vh - 16px); display:grid; grid-template-rows: auto 1fr auto}
   header{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:2px solid var(--line); background:var(--panel)}
   header .title{display:flex; gap:10px; align-items:center}
   header .title .ttext{font-family:"Press Start 2P", system-ui; font-size:14px; color:var(--accent2); letter-spacing:1px}
   header .day{display:flex; gap:10px; align-items:center}
   .chip{ padding:6px 10px; border:2px solid var(--line); background:var(--slot)}
   
-  .grid{display:grid; grid-template-columns: 260px 1fr 380px; gap:12px; margin-top:12px}
-  .panel{background:var(--panel); border:2px solid var(--line); min-height:520px; position:relative; box-shadow: inset 0 0 0 2px #1b2b25}
+  .grid{display:grid; grid-template-columns: 260px 1fr 380px; gap:12px; margin-top:12px; height:100%; min-height:0}
+  .panel{background:var(--panel); border:2px solid var(--line); min-height:0; position:relative; box-shadow: inset 0 0 0 2px #1b2b25; overflow:hidden}
   .panel h3{margin:0; padding:8px 10px; border-bottom:2px solid var(--line); color:var(--accent2); font-family:"Press Start 2P"; font-size:11px}
   /* LEFT */
   .stats{display:grid; grid-template-rows:auto 1fr}
@@ -29,9 +32,10 @@
   .meter .val{padding:4px 8px; background:var(--slot); border:2px solid var(--line); min-width:70px; text-align:right}
   .rules{margin-top:8px; padding:8px; background:#1b2623; border:2px solid #334742; font-size:18px}
   /* CENTER */
-  .mail{display:grid; grid-template-rows:auto auto 1fr}
+  .mail{display:grid; grid-template-rows:auto auto 1fr; min-height:0}
   .mail .fromline,.mail .subject{padding:8px 12px; border-bottom:2px solid var(--line); display:flex; justify-content:space-between; gap:10px}
   .paper{margin:10px; background:#efe6c7; color:#2c2a26; border:2px solid #d2c79c; box-shadow:0 6px 0 #b4aa80; padding:12px; line-height:1.25; position:relative}
+  .mail .paper{ height:100%; overflow:auto }
   .paper .cvhead{display:grid; grid-template-columns:110px 1fr; gap:12px; margin-bottom:8px}
   .portrait{width:110px; height:110px; border:3px solid #b4aa80; background:#506e63; position:relative; overflow:hidden; border-radius:6px}
   .porimg{width:100%; height:100%; object-fit:cover; display:block}
@@ -41,7 +45,7 @@
   .stamp.ok{color:#1ee679; background:rgba(30,230,121,.1)} .stamp.no{color:#ff6b6b; background:rgba(255,107,107,.08)} .stamp.show{animation:stamp .35s ease-out forwards}
   @keyframes stamp{0%{opacity:0; transform:rotate(-6deg) scale(.1)} 70%{opacity:1; transform:rotate(-6deg) scale(1.05)} 100%{opacity:1; transform:rotate(-6deg) scale(1)}}
   /* RIGHT */
-  .jobs{display:grid; grid-template-rows:auto auto auto 1fr}
+  .jobs{display:grid; grid-template-rows:auto auto auto 1fr; min-height:0}
   .roleSel{ padding:8px 10px; border-bottom:2px solid var(--line); display:flex; gap:8px; align-items:center; flex-wrap:wrap}
   select{background:var(--slot); color:var(--ink); border:2px solid var(--line); padding:6px; font-family:inherit}
   .card{margin:10px; border:2px solid #3a4b45; background:#1b2623; padding:10px}
@@ -51,6 +55,8 @@
   .mismatch{color:var(--warn)} .match{color:var(--ok)}
   /* FOOT */
   .footer{margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .btn{ white-space:nowrap }
+  #status{ min-height: 18px; flex:1 1 320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .btn{border:3px solid #000; padding:10px 16px; font-family:"Press Start 2P"; font-size:12px; cursor:pointer; box-shadow:0 4px 0 #000, inset 0 0 0 2px rgba(255,255,255,.06); letter-spacing:1px; text-transform:uppercase}
   .btn.hire{background:#1e4020; color:#baf3b2; border-color:#0b1a0b}
   .btn.reject{background:#5a201c; color:#ffd1c9; border-color:#220b0a}
@@ -65,13 +71,26 @@
   .bar>div{position:absolute; left:0; top:0; bottom:0; background:#8bd9a5}
   .legend{display:flex; gap:12px; justify-content:center}
   .legend .dot{width:12px; height:12px; display:inline-block; border:2px solid #000}
+  /* Responsive */
+  @media (max-width: 1100px){
+    .grid{grid-template-columns: 1fr}
+    .panel{min-height:auto}
+    .paper .cvhead{grid-template-columns:80px 1fr}
+  }
+  @media (max-width: 680px){
+    header{flex-direction:column; align-items:flex-start; gap:8px}
+    .paper .cvhead{grid-template-columns:1fr}
+    .kv{grid-template-columns:1fr 1fr}
+    .portrait{width:80px; height:80px}
+    .row{flex-wrap:wrap}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="title">
-      <div class="ttext">HR PAPERS — HIRING TERMINAL</div>
+      <div class="ttext">CVScan</div>
       <div class="row mini">
         <label class="chip" style="display:flex;align-items:center;gap:8px">🔊 Sound
           <input type="checkbox" id="soundToggle" checked>
@@ -80,6 +99,9 @@
           <input type="range" id="volume" min="0" max="1" step="0.01" value="0.6" style="width:120px">
         </label>
         <div class="chip">CAREER <span id="career">0</span></div>
+        <div class="chip">BOSS <span id="boss">100</span>%</div>
+        <div class="chip">MODE <span id="modeView">Career</span></div>
+        <div class="chip">OFFICE LVL <span id="officeLvl">1</span></div>
         
       </div>
     </div>
@@ -164,7 +186,9 @@
     <button class="btn" id="btnHelp" style="padding:6px 25px">HELP</button>
     <button class="btn hire" id="btnHire" disabled>HIRE</button>
     <button class="btn reject" id="btnReject" disabled>REJECT</button>
-    <!-- <button class="btn" id="btnExport">Export CSV</button> -->
+    <button class="btn" id="btnSpam">SPAM FILTER (-10)</button>
+    <button class="btn" id="btnBoard">LEADERBOARD</button>
+    <button class="btn" id="btnExport">EXPORT CSV</button>
     <div class="mini muted" id="status">Press START to initialize audio and begin Day 1.</div>
   </div>
 </div>
@@ -174,7 +198,18 @@
 <div class="overlay" id="startOverlay">
   <div class="card">
     <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px">HR PAPERS — START</div>
-    <div class="mini" style="margin-bottom:14px">Click Start to enable audio and initialize the terminal. Shortcuts: H/R/Space.</div>
+    <div class="mini" style="margin-bottom:10px">Click Start to enable audio and initialize the terminal. Shortcuts: H/R/Space.</div>
+    <div class="mini" style="display:grid; gap:8px; text-align:left">
+      <label>Game Mode:
+        <select id="modeSelect">
+          <option value="career">Career</option>
+          <option value="endless">Endless</option>
+          <option value="challenge">Challenge</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="optRivals" checked> Rivals can steal good candidates if you are slow</label>
+      <label><input type="checkbox" id="optPressure"> Extra time pressure</label>
+    </div>
     <button class="btn" id="btnStart" onclick="window.__startGame && window.__startGame()">START</button>
   </div>
 </div>
@@ -190,9 +225,19 @@
       <span><span class="dot" style="background:#8bd9a5"></span> Hires</span>
       <span><span class="dot" style="background:#e27a52"></span> Rejects</span>
     </div>
+    <div id="summaryExtras" class="mini" style="margin-top:10px; text-align:left"></div>
     <div style="margin-top:14px"><button class="btn" id="btnContinue">CONTINUE</button></div>
   </div>
 </div>
+
+<!-- GAME OVER OVERLAY -->
+<div class="overlay" id="gameOverOverlay" style="display:none">
+  <div class="card" id="gameOverCard">
+    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px">GAME OVER</div>
+    <div id="gameOverBody" class="mini" style="text-align:left">Now it's your turn to find a new job. You were fired.</div>
+    <div style="margin-top:14px"><button class="btn" id="btnRestart">RETRY</button></div>
+  </div>
+  </div>
 
 <!-- HELP OVERLAY -->
 <div class="overlay" id="helpOverlay" style="display:none">
@@ -201,19 +246,36 @@
     <div class="mini">
       <ol style="margin:0 0 10px 18px">
         <li><strong>Read the email + CV</strong> in the center panel.</li>
-        <li><strong>Select the correct vacancy</strong> on the right (it should match the applicant’s “Applied Role”).</li>
-        <li>Compare CV skills to the <strong>Required Skills</strong> list. The board shows <span class="match">OK</span> or <span class="mismatch">MISSING</span>.</li>
-        <li>Follow <strong>Day Rules</strong> (experience minimums, special conditions, events).</li>
+        <li><strong>Select the correct vacancy</strong> on the right (should match the applicant’s “Applied Role”).</li>
+        <li>Compare CV <strong>skills</strong> to <strong>Required Skills</strong> — each requirement shows <span class="match">OK</span>/<span class="mismatch">MISSING</span>.</li>
+        <li>Check <strong>Day Rules</strong> (experience minimums, tech specifics, special events).</li>
         <li><strong>Decide:</strong> HIRE if all required skills + rules are satisfied and quotas allow; otherwise REJECT.</li>
       </ol>
-      <div style="margin:8px 0"><strong>Scoring</strong>: Correct decisions +10 credits (and score). Mistakes −10 credits (+warning). Meet all quotas for a day to earn a bonus.</div>
-      <div style="margin:8px 0"><strong>Story Events</strong>: <em>Spam CV</em> (reject), <em>CEO’s Nephew</em> (don’t succumb to pressure if they fail checks), <em>Legend</em> (excellent candidate, but still match the right role).</div>
+      <div style="margin:10px 0 4px"><strong>Game Modes</strong></div>
+      <ul style="margin:0 0 10px 18px">
+        <li><strong>Career</strong>: Classic day-by-day with quotas and summary.</li>
+        <li><strong>Endless</strong>: Randomized waves — survive as long as you can.</li>
+        <li><strong>Challenge</strong>: Stricter timers, more applicants, more missing skills.</li>
+      </ul>
+      <div style="margin:8px 0"><strong>Boss & Rivals</strong>: Boss satisfaction rises on correct calls and drops on mistakes. If <em>Rivals</em> are enabled, waiting too long on a strong candidate may result in a rival auto-hiring them.</div>
+      <div style="margin:8px 0"><strong>Economy</strong>: Correct decisions +10 credits; mistakes −10 (adds a warning). <em>Each hire costs salary</em> = 10 + 5×(# required skills). <em>VIP</em> hires grant a small bonus. <em>Scandal/fake</em> hires cause heavy penalties. Meeting all quotas yields a day-end bonus.</div>
+      <div style="margin:8px 0"><strong>Events</strong>: <em>Spam</em> (reject), <em>CEO’s Nephew</em> (nepotism pressure), <em>Legend</em> (great candidate — still must match role), <em>VIP</em> (bonus on proper hire), <em>Scandal</em> (fake candidate — avoid hiring).</div>
+      <div style="margin:8px 0"><strong>Spam Filter</strong>: Button in footer. Costs 10 credits to scan the next few CVs and remove spam automatically.</div>
+      <div style="margin:8px 0"><strong>Leaderboard & Achievements</strong>: Your top runs are saved locally. Use the Leaderboard button to view standings. Some achievements unlock as you progress.</div>
       <div style="margin:8px 0"><strong>Hotkeys</strong>: H = Hire, R = Reject, <kbd>Space</kbd> = quick Reject/Next, <kbd>?</kbd> = open/close Help.</div>
-      <div style="margin:8px 0">Use <strong>Export CSV</strong> to download a log of your run.</div>
     </div>
     <div style="text-align:center; margin-top:12px"><button class="btn" id="btnCloseHelp">CLOSE</button></div>
   </div>
 </div>
+
+<!-- LEADERBOARD OVERLAY -->
+<div class="overlay" id="boardOverlay" style="display:none">
+  <div class="card" style="text-align:left; max-width:620px">
+    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px; text-align:center">LEADERBOARD</div>
+    <div id="boardList" class="mini"></div>
+    <div style="text-align:center; margin-top:12px"><button class="btn" id="btnCloseBoard">CLOSE</button></div>
+  </div>
+  </div>
 
 <script>
 (function(){
@@ -267,12 +329,12 @@
       roles:["Office Manager","QA Engineer","Frontend Dev","React Developer","Backend Dev","Product Manager","Support Engineer"],
       quotas:{"QA Engineer":1},
       rules:["All required skills must be present.","Beware of spam CVs."],
-      check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); return out; } },
+      check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate'); return out; } },
     { time: 120, applicants: 9,
       roles:["QA Engineer","Frontend Dev","React Developer","Backend Dev","Java Developer","Python Developer","UI/UX Designer"],
       quotas:{"Frontend Dev":1,"Java Developer":1},
       rules:["At least 2 years experience for dev roles.","Java roles require Spring.","No nepotism hires."],
-      check:(c,chosen)=>{ const out=[]; const devRoles=["Frontend Dev","React Developer","Backend Dev","Java Developer","Python Developer"]; if(devRoles.includes(chosen) && c.years<2) out.push("Experience < 2y"); if(chosen==="Java Developer" && !c.skills.includes("Spring")) out.push("Missing Spring for Java Dev"); if(c.event==='ceoNephew') out.push('Nepotism pressure'); return out; } },
+      check:(c,chosen)=>{ const out=[]; const devRoles=["Frontend Dev","React Developer","Backend Dev","Java Developer","Python Developer"]; if(devRoles.includes(chosen) && c.years<2) out.push("Experience < 2y"); if(chosen==="Java Developer" && !c.skills.includes("Spring")) out.push("Missing Spring for Java Dev"); if(c.event==='ceoNephew') out.push('Nepotism pressure'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate'); return out; } },
     { time: 130, applicants: 10,
       roles:["Backend Dev","DevOps Engineer","Linux Administrator","SRE","Cloud Architect","Security Engineer","DBA","Tech Lead"],
       quotas:{"DevOps Engineer":1,"Linux Administrator":1,"Tech Lead":1},
@@ -280,7 +342,7 @@
       check:(c,chosen)=>{ const out=[]; if(c.redFlags.length>0) out.push("Has red flags"); if(chosen==="DevOps Engineer"){ const ok = c.skills.includes("Docker") && c.skills.includes("Kubernetes"); if(!ok) out.push("DevOps missing Docker+K8s"); }
         if(chosen==="Linux Administrator"){ if(!c.skills.includes("Bash")) out.push("Linux Admin missing Bash"); if(!c.skills.includes("Networking")) out.push("Linux Admin missing Networking"); }
         if(chosen==="Tech Lead"){ if(c.years<4) out.push("Tech Lead needs 4+ years"); if(!c.skills.includes("Mentoring")) out.push("Tech Lead missing Mentoring"); }
-        if(c.event==='legend' && chosen!==c.applyFor) out.push('Legendary talent misrouted');
+        if(c.event==='legend' && chosen!==c.applyFor) out.push('Legendary talent misrouted'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate');
         return out; } },
   ];
 
@@ -350,11 +412,17 @@
 
   function randEvent(){
     const r = Math.random();
-    if(r<0.08) return 'spam';
-    if(r<0.12) return 'ceoNephew';
-    if(r<0.16) return 'legend';
+    if(r<0.07) return 'spam';
+    if(r<0.10) return 'ceoNephew';
+    if(r<0.135) return 'legend';
+    if(r<0.155) return 'vip';
+    if(r<0.165) return 'scandal';
     return null;
   }
+
+  const PERSONALITY = ["Diligent","Lazy","Overconfident","Humble","Job hopper","Detail‑oriented","Social","Introvert","Ambitious","Pragmatic"];
+  const HIDDEN_ISSUES = ["Fake diploma","Inconsistent dates","Unverifiable reference","Portfolio plagiarized"];
+  const EGG_NAMES = ["Ada Lovelace","Alan Turing","Grace Hopper","Linus Torvalds","Guido van Rossum","Margaret Hamilton"];
 
   function genApplicant(roles, missingChance){
     const role = rand(roles);
@@ -365,7 +433,8 @@
     const pool = allSkills.filter(s=>!skills.has(s));
     if(Math.random()<missingChance && required.length){ const drop = rand(required); skills.delete(drop); }
     for(let i=0;i<Math.floor(Math.random()*2)+1;i++) skills.add(rand(pool));
-    const name = rand(FIRST)+" "+rand(LAST);
+    const special = Math.random()<0.01 ? rand(EGG_NAMES) : null;
+    const name = special || (rand(FIRST)+" "+rand(LAST));
     const years = 1 + Math.floor(Math.random()*10);
     const certs = Math.random()<0.5 ? ["ISTQB","AWS CP","LPIC-1","CKA","OCJP","AZ-900","GCP ACE"].slice(0, 1+Math.floor(Math.random()*3)) : [];
     const redFlags = Math.random()<0.18 ? [rand(RED_FLAGS)] : [];
@@ -373,11 +442,14 @@
     const edu = rand(EDUC);
     const idx = Math.floor(Math.random()*2000);
     const event = randEvent();
-    const eventNote = event==='spam'? '⚠️ Looks like a bulk/spam submission.' : event==='ceoNephew'? '☎️ CEO mentioned this candidate earlier today.' : event==='legend'? '⭐ Rumored high performer, unusual background.' : '';
+    const personality = rand(PERSONALITY);
+    const hiddenIssues = Math.random()<0.12 ? [rand(HIDDEN_ISSUES)] : [];
+    const isFake = event==='scandal' || hiddenIssues.includes('Fake diploma');
+    const eventNote = event==='spam'? '⚠️ Looks like a bulk/spam submission.' : event==='ceoNephew'? '☎️ CEO mentioned this candidate earlier today.' : event==='legend'? '⭐ Rumored high performer, unusual background.' : event==='vip'? '🎖 VIP referral — potential bonus.' : event==='scandal'? '🕵️ Unusual paperwork, proceed carefully.' : '';
     return {
       name, email: emailOf(name), id:"C-"+(1000+Math.floor(Math.random()*9000)), ts: timeStamp(),
       age: 22+Math.floor(Math.random()*25), applyFor: role, skills:[...skills], years, certs, redFlags,
-      note: `${city} • ${edu}. ${rand(NOTES)} ${eventNote}`, img: avatarDataUri(idx), event
+      note: `${city} • ${edu}. ${rand(NOTES)} Personality: ${personality}. ${eventNote}`, img: avatarDataUri(idx), event, personality, hiddenIssues, isFake
     };
   }
 
@@ -390,6 +462,9 @@
   function beep(freq=400, dur=0.08, type='square', gain=0.06){ if(!audioCtx || !settings.sound) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=gain*settings.volume; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+dur); }
   function stampFx(ok=true){ if(!audioCtx || !settings.sound) return; const base= ok? 180:120; beep(base,0.06,'square',0.09); setTimeout(()=>beep(base/2,0.09,'sawtooth',0.06),60); }
   function wrongFx(){ beep(110,0.15,'sawtooth',0.08); setTimeout(()=>beep(90,0.15,'square',0.06),120); }
+  function bossFx(){ beep(300,0.06,'triangle',0.04); }
+  function stealFx(){ beep(200,0.08,'sine',0.06); setTimeout(()=>beep(160,0.12,'sawtooth',0.04),90); }
+  function vipFx(){ beep(520,0.06,'square',0.08); setTimeout(()=>beep(660,0.06,'square',0.06),60); }
   soundToggle.checked = settings.sound; volumeRange.value = String(settings.volume);
   soundToggle.addEventListener('change', ()=>{ settings.sound = soundToggle.checked; localStorage.setItem('hr_sound', JSON.stringify(settings.sound)); });
   volumeRange.addEventListener('input', ()=>{ settings.volume = parseFloat(volumeRange.value); localStorage.setItem('hr_volume', String(settings.volume)); });
@@ -401,26 +476,30 @@
     warnings: parseInt(localStorage.getItem('hr_career_warn')||'0',10),
   };
   function saveCareer(){ localStorage.setItem('hr_career_score', CAREER.score); localStorage.setItem('hr_career_credits', CAREER.credits); localStorage.setItem('hr_career_warn', CAREER.warnings); }
+  function endGameNow(message){ try{ clearInterval(dayTimer); }catch{}; started=false; roleSelect.disabled=true; document.getElementById('btnHire').disabled=true; document.getElementById('btnReject').disabled=true; const s = document.getElementById('summaryOverlay'); if(s) s.style.display='none'; if(boardOverlay) boardOverlay.style.display='none'; const go = document.getElementById('gameOverOverlay'); const body=document.getElementById('gameOverBody'); if(body && message) body.textContent = message; if(go) go.style.display='flex'; }
 
   /* ===================== LOG & CSV ===================== */
   const resultsLog = [];
   function exportCSV(){
-    const header = ['day','name','applied_role','evaluated_as','decision','correct','missing_required','rule_violations','credits_after','time_left'];
+    if(!resultsLog.length){ el('status').textContent = 'No decisions yet — play before exporting.'; wrongFx(); return; }
+    const esc = (v)=>('"'+String(v==null? '': v).replace(/"/g,'""')+'"');
+    const header = ['day','name','email','id','age','applied_role','evaluated_as','decision','correct','years','skills','certs','flags','note','event','missing_required','rule_violations','credits_after','time_left'];
     const rows = resultsLog.map(r=>[
-      r.day, r.name, r.role, r.chosen, r.decision, r.correct,
-      '"'+String(r.missing||'').replaceAll('"','""')+'"',
-      '"'+String(r.violations||'').replaceAll('"','""')+'"',
-      r.creditsAfter, r.timeLeft
-    ]);
-    const csv = [header.join(','), ...rows.map(a=>a.join(','))].join('');
+      r.day, r.name, r.email, r.id, r.age, r.role, r.chosen, r.decision, r.correct, r.years, r.skills, r.certs, r.flags, r.note, r.event, r.missing, r.violations, r.creditsAfter, r.timeLeft
+    ].map(esc));
+    const csv = [header.join(','), ...rows.map(a=>a.join(','))].join('\n');
     const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'hr-papers-results.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    el('status').textContent = 'CSV exported.';
   }
 
   /* ===================== STATE ===================== */
-  let dayIndex=0, applicants=[], idx=0, score=0, warnings=0, credits=200; let dayTimer=null, timeLeft=0; let quotas={}; let started=false;
+  let dayIndex=0, applicants=[], idx=0, score=0, warnings=0, credits=200; let dayTimer=null, timeLeft=0; let quotas={}; let started=false; let currentCheck=(c,chosen)=>[];
   let dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
+  let boss=100; let mode='career'; let rivals=true; let pressure=false; let lastApplicantAt=0; let stealThreshold=12; let officeLvl=1;
+  const LEADER_KEY='hr_leaderboard_v1'; const ACHV_KEY='hr_achievements_v1';
+  let achievements = JSON.parse(localStorage.getItem(ACHV_KEY)||'{}');
 
   /* ===================== DOM & HELPERS ===================== */
   const el = id=>document.getElementById(id);
@@ -431,6 +510,9 @@
     const attempts = score + warnings; const acc = attempts? Math.round((score/attempts)*100):100;
     el('acc').textContent = acc+"%"; el('warns').textContent = warnings; el('credits').textContent = credits; el('score').textContent = score; el('day').textContent = dayIndex+1; el('career').textContent = CAREER.score;
     const qv = quotas[roleSelect.value]; el('quotaView').textContent = (qv===undefined? '—' : qv);
+    const bossEl = document.getElementById('boss'); if(bossEl) bossEl.textContent = Math.max(0, Math.min(100, Math.round(boss)));
+    const modeView = document.getElementById('modeView'); if(modeView) modeView.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+    officeLvl = 1 + Math.floor(CAREER.score/50); const offEl = document.getElementById('officeLvl'); if(offEl) offEl.textContent = officeLvl;
   }
 
   function renderRoleOptions(roles){ roleSelect.innerHTML=""; roles.forEach(r=>{ const opt=document.createElement('option'); opt.value=r; opt.textContent=r; roleSelect.appendChild(opt); }); }
@@ -445,12 +527,14 @@
     el('applyFor').textContent=c.applyFor; el('cvName').textContent=c.name; el('cvAge').textContent=c.age; el('cvRole').textContent=c.applyFor;
     el('cvSkills').textContent=c.skills.join(', '); el('cvNote').textContent=c.note; el('cvExp').textContent=c.years; el('cvCerts').textContent=(c.certs.join(', ')||'—'); el('cvFlags').textContent=(c.redFlags.join(', ')||'—');
     const imgEl = el('portraitImg'); imgEl.src=c.img; imgEl.alt = `Avatar of ${c.name}`;
-    roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.'; setStats();
+    roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.'; lastApplicantAt=Date.now(); setStats();
   }
 
   function missingFor(candidate, role){ const needs = VACANCIES[role]?.required || []; return needs.filter(req=>!candidate.skills.includes(req)); }
   function updateDiff(){ if(idx>=applicants.length) return {miss:[], extraViol:[]}; const c=applicants[idx]; const role=roleSelect.value; const needs = VACANCIES[role]?.required || []; needs.forEach(req=>{ const b=el('need-'+cssSafe(req)); if(!b) return; if(c.skills.includes(req)){ b.textContent='OK'; b.className='badge match'; } else { b.textContent='MISSING'; b.className='badge mismatch'; } }); const miss = missingFor(c,role); const extraViol = DAYS[dayIndex].check(c, role); const message = [ (miss.length? ('Missing: '+miss.join(', ')) : 'No missing required skills.'), (extraViol.length? (' Rules: '+extraViol.join('; ')) : '') ].join(''); el('diffBox').textContent = message || '—'; return {miss, extraViol}; }
   roleSelect.addEventListener('change', ()=>{ if(!started) return; updateDiff(); setStats(); beep(750,0.05,'triangle',0.02); });
+  function salaryOf(role){ const needs=(VACANCIES[role]?.required||[]).length; return 10 + needs*5; }
+  function isAttractive(candidate){ const missingApplied = missingFor(candidate, candidate.applyFor); const extra = DAYS[dayIndex]?.check ? DAYS[dayIndex].check(candidate, candidate.applyFor) : []; return missingApplied.length===0 && extra.length===0; }
 
   function verdict(decision){ if(!started) return; const c = applicants[idx]; const chosen = roleSelect.value; const {miss} = updateDiff(); const extra = DAYS[dayIndex].check(c, c.applyFor);
     let correct = true;
@@ -459,13 +543,46 @@
     const missingApplied = missingFor(c, c.applyFor);
     if(decision===true && (missingApplied.length>0 || extra.length>0)) correct=false;
     if(decision===false && (missingApplied.length===0 && extra.length===0)) correct=false;
+    if(decision===true && c.event==='scandal') correct=false;
 
-    if(correct){ score++; dayStats.correct++; credits += 10; CAREER.score++; CAREER.credits += 10; if(decision===true && quotas[c.applyFor]!==undefined){ quotas[c.applyFor]--; } stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; stampFx(decision); el('status').textContent = '✅ Good call.'; }
-    else { warnings++; dayStats.mistakes++; credits -= 10; CAREER.warnings++; CAREER.credits -= 10; stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; wrongFx(); el('status').textContent = '❌ Incorrect judgment.'; }
+    if(correct){
+      score++; dayStats.correct++; credits += 10; CAREER.score++; CAREER.credits += 10; boss = Math.min(100, boss+2); bossFx();
+      if(decision===true){
+        const sal = salaryOf(c.applyFor); credits -= sal; CAREER.credits -= sal; if(quotas[c.applyFor]!==undefined){ quotas[c.applyFor]--; }
+        if(c.event==='vip'){ credits += 10; CAREER.credits += 10; vipFx(); }
+      }
+      stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; stampFx(decision); el('status').textContent = '✅ Good call.';
+    }
+    else {
+      warnings++; dayStats.mistakes++; credits -= 10; CAREER.warnings++; CAREER.credits -= 10; boss = Math.max(0, boss-6);
+      if(decision===true){ const sal = salaryOf(c.applyFor); const penalty = 15; credits -= (sal+penalty); CAREER.credits -= (sal+penalty); }
+      stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; wrongFx(); el('status').textContent = '❌ Incorrect judgment.';
+    }
 
     decision? dayStats.hires++ : dayStats.rejects++;
 
-    resultsLog.push({ day: dayIndex+1, name:c.name, role:c.applyFor, chosen, decision:decision?'hire':'reject', correct, missing: missingApplied.join('; '), violations: extra.join('; '), creditsAfter: credits, timeLeft });
+    resultsLog.push({
+      day: dayIndex+1,
+      name: c.name,
+      email: c.email,
+      id: c.id,
+      age: c.age,
+      role: c.applyFor,
+      chosen,
+      decision: decision?'hire':'reject',
+      correct,
+      years: c.years,
+      skills: c.skills.join('; '),
+      certs: c.certs.join('; '),
+      flags: c.redFlags.join('; '),
+      note: c.note,
+      event: c.event||'',
+      missing: missingApplied.join('; '),
+      violations: extra.join('; '),
+      creditsAfter: credits,
+      timeLeft
+    });
+    if(credits<=0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
     saveCareer(); setStats();
     setTimeout(()=>{ idx++; renderApplicant(); }, 650);
   }
@@ -491,12 +608,28 @@
       <div class="bar"><div style="width:${pct(dayStats.correct)}%; background:#6ed06e"></div></div>
       <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.mistakes)}%; background:#e25b5b"></div></div>
     `;
+    // achievements + leaderboard preview
+    const extras = document.getElementById('summaryExtras');
+    if(extras){
+      const achUnlocked = [];
+      if(CAREER.score>=100 && !achievements.score100){ achievements.score100=true; achUnlocked.push('Achievement unlocked: Score 100'); }
+      const devHires = resultsLog.filter(r=>/Developer|Dev|Engineer/.test(r.role) && r.decision==='hire').length;
+      if(devHires>=100 && !achievements.hire100){ achievements.hire100=true; achUnlocked.push('Achievement unlocked: Hire 100 developers'); }
+      localStorage.setItem(ACHV_KEY, JSON.stringify(achievements));
+      const top = getLeaderboard().slice(0,5).map((e,i)=>`${i+1}. ${e.name} — ${e.credits} cr, score ${e.score}`).join('<br>');
+      extras.innerHTML = `
+        <div><strong>Boss:</strong> ${Math.round(boss)}%</div>
+        <div style="margin-top:8px"><strong>Leaderboard (Top 5)</strong><br>${top||'—'}</div>
+        ${achUnlocked.length? `<div style=\"margin-top:8px; color:#8bd9a5\">${achUnlocked.join('<br>')}</div>` : ''}
+      `;
+    }
     s.style.display='flex';
   }
 
   function endGame(){
     const s = document.getElementById('summaryBody');
     s.innerHTML += `<div style='margin-top:12px'><strong>Campaign complete!</strong> Final Credits: ${credits}. Career — Score: ${CAREER.score}, Credits: ${CAREER.credits}, Warnings: ${CAREER.warnings}.</div>`;
+    pushLeaderboard({ name:'You', credits: CAREER.credits, score: CAREER.score });
   }
 
   function nextDay(){
@@ -505,20 +638,41 @@
     if(unmet.length===0){ bonus = 30; credits += bonus; CAREER.credits += bonus; }
     else { penalty = 10*unmet.length; credits -= penalty; CAREER.credits -= penalty; }
     saveCareer();
+    if(credits<=0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
 
     dayIndex++;
-    if(dayIndex < DAYS.length){ startDay(); }
-    else { endGame(); }
+    if(mode==='career'){
+      if(dayIndex < DAYS.length){ startDay(); }
+      else { endGame(); }
+    } else if(mode==='endless' || mode==='challenge'){
+      startDay();
+    }
   }
 
   function startDay(){
-    const cfg = DAYS[dayIndex];
-    applicants = Array.from({length: cfg.applicants}, ()=> genApplicant(cfg.roles, 0.4));
+    let cfg = DAYS[dayIndex];
+    if(mode==='endless'){
+      const allRoles = Object.keys(VACANCIES);
+      const count = 8 + Math.floor(Math.random()*5);
+      const t = 90 + Math.floor(Math.random()*60);
+      cfg = { time: t, applicants: count, roles: allRoles.slice(0).sort(()=>Math.random()-0.5).slice(0, Math.min(10, allRoles.length)), quotas:{}, rules:["Endless — keep going!"], check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate'); return out; } };
+    }
+    if(mode==='challenge'){
+      cfg = DAYS[Math.min(dayIndex, DAYS.length-1)];
+      cfg = { ...cfg, time: Math.max(60, Math.floor(cfg.time*0.7)), applicants: cfg.applicants+2 };
+    }
+    const miss = mode==='challenge' ? 0.55 : 0.4;
+    applicants = Array.from({length: cfg.applicants}, ()=> genApplicant(cfg.roles, miss));
     idx = 0; quotas = {...cfg.quotas};
     dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
-    renderRoleOptions(cfg.roles); renderRuleList(dayIndex);
+    renderRoleOptions(cfg.roles); renderRuleList(Math.min(dayIndex, DAYS.length-1));
     timeLeft = cfg.time; updateTimeUi(); clearInterval(dayTimer);
-    dayTimer = setInterval(()=>{ timeLeft--; updateTimeUi(); if(timeLeft<=0){ clearInterval(dayTimer); endDay(); } }, 1000);
+    const tickMs = pressure? 800 : 1000;
+    dayTimer = setInterval(()=>{ 
+      timeLeft--; updateTimeUi();
+      if(rivals && idx<applicants.length){ const elapsed = (Date.now()-lastApplicantAt)/1000; if(elapsed>stealThreshold){ const c = applicants[idx]; if(isAttractive(c)){ stealFx(); el('status').textContent = '⏳ Rival HR hired this candidate first!'; dayStats.rejects++; boss = Math.max(0, boss-3); idx++; renderApplicant(); } else { lastApplicantAt=Date.now(); } } }
+      if(timeLeft<=0){ clearInterval(dayTimer); endDay(); }
+    }, tickMs);
     el('btnHire').disabled=false; el('btnReject').disabled=false; roleSelect.disabled=false;
     el('status').textContent = `Day ${dayIndex+1} — Meet quotas before time runs out.`;
     document.getElementById('summaryOverlay').style.display='none';
@@ -534,12 +688,22 @@ const btnContinue = document.getElementById('btnContinue');
 const btnHelp = document.getElementById('btnHelp');
 const helpOverlay = document.getElementById('helpOverlay');
 const btnCloseHelp = document.getElementById('btnCloseHelp');
+const modeSelect = document.getElementById('modeSelect');
+const optRivals = document.getElementById('optRivals');
+const optPressure = document.getElementById('optPressure');
+const btnSpam = document.getElementById('btnSpam');
+const btnBoard = document.getElementById('btnBoard');
+const boardOverlay = document.getElementById('boardOverlay');
+const btnCloseBoard = document.getElementById('btnCloseBoard');
+const gameOverOverlay = document.getElementById('gameOverOverlay');
+const btnRestart = document.getElementById('btnRestart');
 
 // Expose a robust starter for inline onclick and listeners
 window.__startGame = function(){
   try{
     ensureAudio(); if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume().catch(()=>{}); }
     started = true; startOverlay.style.display='none';
+    mode = (modeSelect && modeSelect.value)||'career'; rivals = optRivals? optRivals.checked : true; pressure = optPressure? optPressure.checked : false; stealThreshold = pressure? 9 : 12; const mv=document.getElementById('modeView'); if(mv) mv.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
     if(window.requestAnimationFrame){ requestAnimationFrame(()=>{ try{ startDay(); }catch(err){ console.error('startDay error', err); el('status').textContent='Start failed: '+err; } }); }
     else { setTimeout(()=>{ try{ startDay(); }catch(err){ console.error('startDay error', err); el('status').textContent='Start failed: '+err; } }, 0); }
   }catch(e){ console.error('StartGame error', e); el('status').textContent='Start error: '+e; }
@@ -551,6 +715,10 @@ if(btnContinue){ btnContinue.addEventListener('click', ()=>{ nextDay(); document
 if(btnHelp){ btnHelp.addEventListener('click', ()=>{ helpOverlay.style.display='flex'; }); }
 if(btnCloseHelp){ btnCloseHelp.addEventListener('click', ()=>{ helpOverlay.style.display='none'; }); }
 if(helpOverlay){ helpOverlay.addEventListener('click', (e)=>{ if(e.target===helpOverlay) helpOverlay.style.display='none'; }); }
+if(btnSpam){ btnSpam.addEventListener('click', ()=>{ runSpamFilter(); }); }
+if(btnBoard){ btnBoard.addEventListener('click', ()=>{ showBoard(); }); }
+if(btnCloseBoard){ btnCloseBoard.addEventListener('click', ()=>{ if(boardOverlay) boardOverlay.style.display='none'; }); }
+if(btnRestart){ btnRestart.addEventListener('click', ()=>{ location.reload(); }); }
 
 /* ===================== Keyboard Shortcuts ===================== */
   document.addEventListener('keydown', (e)=>{
@@ -574,6 +742,12 @@ if(helpOverlay){ helpOverlay.addEventListener('click', (e)=>{ if(e.target===help
   el('btnHire').addEventListener('click', ()=>verdict(true));
   el('btnReject').addEventListener('click', ()=>verdict(false));
   el('btnExport').addEventListener('click', exportCSV);
+
+  /* ===================== Economy, Leaderboard & Utilities ===================== */
+  function runSpamFilter(){ if(!started) return; const cost=10; if(credits<cost){ el('status').textContent='Not enough credits to run spam filter.'; wrongFx(); return; } credits-=cost; CAREER.credits-=cost; if(credits<=0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; } let removed=0; const lookahead = applicants.slice(idx, idx+5); const keep = []; lookahead.forEach((c)=>{ if(c.event==='spam'){ removed++; } else { keep.push(c); } }); applicants.splice(idx, 5, ...keep); setStats(); el('status').textContent = removed? `Spam filter removed ${removed} spam CV(s).` : 'No spam detected.'; }
+  function getLeaderboard(){ try{ return JSON.parse(localStorage.getItem(LEADER_KEY)||'[]'); }catch{ return []; } }
+  function pushLeaderboard(entry){ const list = getLeaderboard(); list.push({ name: entry.name||'You', credits: entry.credits||0, score: entry.score||0, ts: Date.now() }); list.sort((a,b)=> (b.credits - a.credits) || (b.score - a.score) ); localStorage.setItem(LEADER_KEY, JSON.stringify(list.slice(0,20))); }
+  function showBoard(){ const list = getLeaderboard(); const html = list.length? list.slice(0,20).map((e,i)=>`${i+1}. ${e.name} — ${e.credits} cr • score ${e.score}`).join('<br>') : 'No entries yet.'; const box = document.getElementById('boardList'); if(box) box.innerHTML = html; const ov = document.getElementById('boardOverlay'); if(ov) ov.style.display='flex'; }
 })();
 </script>
 </body>
