@@ -50,7 +50,8 @@
   select{background:var(--slot); color:var(--ink); border:2px solid var(--line); padding:6px; font-family:inherit}
   .card{margin:10px; border:2px solid #3a4b45; background:#1b2623; padding:10px}
   .card.dayRules{margin:8px 10px; padding:8px}
-  .card.discrepancies{margin:8px 10px; padding:8px}
+  /* Hide discrepancies panel to increase challenge */
+  .card.discrepancies{ display: none !important; }
   .req{display:grid; gap:4px; margin-top:8px; min-height: 200px}
   .req .item{display:flex; justify-content:space-between; align-items:center; background:#14201c; border:2px solid #2a3a35; padding:4px 6px; font-size: 14px}
   .item .badge{padding:2px 6px; border:2px solid #3a4b45; background:#0e1815; min-width:78px; text-align:center}
@@ -73,6 +74,13 @@
   .bar>div{position:absolute; left:0; top:0; bottom:0; background:#8bd9a5}
   .legend{display:flex; gap:12px; justify-content:center}
   .legend .dot{width:12px; height:12px; display:inline-block; border:2px solid #000}
+  /* Discrepancies box inner scrolling */
+  #diffBox{
+    max-height: 140px;
+    overflow: auto;
+    line-height: 1.3;
+    padding-right: 4px;
+  }
   /* Responsive */
   @media (max-width: 1100px){
     .grid{grid-template-columns: 1fr}
@@ -196,7 +204,7 @@
     <button class="btn" id="btnHelp" style="padding:6px 25px">HELP</button>
     <button class="btn hire" id="btnHire" disabled>HIRE</button>
     <button class="btn reject" id="btnReject" disabled>REJECT</button>
-    <button class="btn" id="btnSpam">SPAM FILTER (-10)</button>
+    <button class="btn" id="btnSpam">SPAM FILTER</button>
     <button class="btn" id="btnBoard">LEADERBOARD</button>
     <button class="btn" id="btnExport">EXPORT CSV</button>
     <div class="mini muted" id="status">Press START to initialize audio and begin Day 1.</div>
@@ -419,20 +427,25 @@
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='110' height='110' viewBox='0 0 64 64'>${avatarShape(idx, style)}</svg>`;
     return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
   }
-
+  
+  // increase spam frequency and add malicious/harassment ("virus") emails
   function randEvent(){
     const r = Math.random();
-    if(r<0.07) return 'spam';
-    if(r<0.10) return 'ceoNephew';
-    if(r<0.135) return 'legend';
-    if(r<0.155) return 'vip';
-    if(r<0.165) return 'scandal';
+    if(r < 0.18) return 'spam';    // more spam
+    if(r < 0.22) return 'virus';   // harassment / malicious email (virus)
+    if(r < 0.28) return 'ceoNephew';
+    if(r < 0.33) return 'legend';
+    if(r < 0.37) return 'vip';
+    if(r < 0.39) return 'scandal';
     return null;
   }
 
   const PERSONALITY = ["Diligent","Lazy","Overconfident","Humble","Job hopper","Detail‑oriented","Social","Introvert","Ambitious","Pragmatic"];
   const HIDDEN_ISSUES = ["Fake diploma","Inconsistent dates","Unverifiable reference","Portfolio plagiarized"];
   const EGG_NAMES = ["Ada Lovelace","Alan Turing","Grace Hopper","Linus Torvalds","Guido van Rossum","Margaret Hamilton"];
+
+  // --- Flat completion bonus for finishing a day ---
+  const DAY_COMPLETE_BONUS = 20;
 
   function genApplicant(roles, missingChance){
     const role = rand(roles);
@@ -455,7 +468,12 @@
     const personality = rand(PERSONALITY);
     const hiddenIssues = Math.random()<0.12 ? [rand(HIDDEN_ISSUES)] : [];
     const isFake = event==='scandal' || hiddenIssues.includes('Fake diploma');
-    const eventNote = event==='spam'? '⚠️ Looks like a bulk/spam submission.' : event==='ceoNephew'? '☎️ CEO mentioned this candidate earlier today.' : event==='legend'? '⭐ Rumored high performer, unusual background.' : event==='vip'? '🎖 VIP referral — potential bonus.' : event==='scandal'? '🕵️ Unusual paperwork, proceed carefully.' : '';
+    const eventNote = event==='spam'? '⚠️ Looks like a bulk/spam submission.' 
+      : event==='virus'? '🛑 Harassment email / suspicious attachment — possible malware.' 
+      : event==='ceoNephew'? '☎️ CEO mentioned this candidate earlier today.' 
+      : event==='legend'? '⭐ Rumored high performer, unusual background.' 
+      : event==='vip'? '🎖 VIP referral — potential bonus.' 
+      : event==='scandal'? '🕵️ Unusual paperwork, proceed carefully.' : '';
     return {
       name, email: emailOf(name), id:"C-"+(1000+Math.floor(Math.random()*9000)), ts: timeStamp(),
       age: 22+Math.floor(Math.random()*25), applyFor: role, skills:[...skills], years, certs, redFlags,
@@ -547,6 +565,108 @@
   function isAttractive(candidate){ const missingApplied = missingFor(candidate, candidate.applyFor); const extra = DAYS[dayIndex]?.check ? DAYS[dayIndex].check(candidate, candidate.applyFor) : []; return missingApplied.length===0 && extra.length===0; }
 
   function verdict(decision){ if(!started) return; const c = applicants[idx]; const chosen = roleSelect.value; const {miss} = updateDiff(); const extra = DAYS[dayIndex].check(c, c.applyFor);
+    // Special handling for malicious/harassment emails (virus)
+    if(c.event === 'virus'){
+      if(decision === true){
+        // Hiring a malicious/virus email infects system -> immediate game over
+        endGameNow("Your computer was infected with a virus. Be careful next time. But for today, you are fired.");
+        return;
+      } else {
+        // Correctly rejecting a malicious email -> bonus credits
+        const bonus = 15;
+        dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
+        resultsLog.push({
+          day: dayIndex+1,
+          name: c.name,
+          email: c.email,
+          id: c.id,
+          age: c.age,
+          role: c.applyFor,
+          chosen,
+          decision: 'reject',
+          correct: true,
+          years: c.years,
+          skills: c.skills.join('; '),
+          certs: c.certs.join('; '),
+          flags: c.redFlags.join('; '),
+          note: c.note,
+          event: c.event||'',
+          missing: missingFor(c, c.applyFor).join('; '),
+          violations: extra.join('; '),
+          creditsAfter: credits,
+          timeLeft
+        });
+        el('status').textContent = `🛡️ Malicious email detected — bonus +${bonus} credits.`;
+        stamp.textContent = 'REJECTED'; stamp.className='stamp no show'; stampFx(true);
+        saveCareer(); setStats();
+        setTimeout(()=>{ idx++; renderApplicant(); }, 650);
+        return;
+      }
+    }
+    // Special handling for spam emails: rejecting is good, hiring causes a penalty
+    if(c.event === 'spam'){
+      if(decision === true){
+        // Hiring spam -> immediate penalty
+        const penalty = 25;
+        warnings++; dayStats.mistakes++; credits -= penalty; CAREER.warnings++; CAREER.credits -= penalty; boss = Math.max(0, boss-8);
+        resultsLog.push({
+          day: dayIndex+1,
+          name: c.name,
+          email: c.email,
+          id: c.id,
+          age: c.age,
+          role: c.applyFor,
+          chosen,
+          decision: 'hire-spam',
+          correct: false,
+          years: c.years,
+          skills: c.skills.join('; '),
+          certs: c.certs.join('; '),
+          flags: c.redFlags.join('; '),
+          note: c.note,
+          event: c.event||'',
+          missing: missingFor(c, c.applyFor).join('; '),
+          violations: extra.join('; '),
+          creditsAfter: credits,
+          timeLeft
+        });
+        el('status').textContent = `❗ You hired a spam letter — penalty -${penalty} credits.`;
+        stamp.textContent = 'HIRED'; stamp.className='stamp no show'; wrongFx();
+        saveCareer(); setStats();
+        setTimeout(()=>{ idx++; renderApplicant(); }, 650);
+        return;
+      } else {
+        // Rejecting spam -> treat as correct (reward)
+        const reward = 10;
+        score++; dayStats.correct++; dayStats.rejects++; credits += reward; CAREER.score++; CAREER.credits += reward;
+        resultsLog.push({
+          day: dayIndex+1,
+          name: c.name,
+          email: c.email,
+          id: c.id,
+          age: c.age,
+          role: c.applyFor,
+          chosen,
+          decision: 'reject-spam',
+          correct: true,
+          years: c.years,
+          skills: c.skills.join('; '),
+          certs: c.certs.join('; '),
+          flags: c.redFlags.join('; '),
+          note: c.note,
+          event: c.event||'',
+          missing: missingFor(c, c.applyFor).join('; '),
+          violations: extra.join('; '),
+          creditsAfter: credits,
+          timeLeft
+        });
+        el('status').textContent = `Spam rejected — +${reward} credits.`;
+        stamp.textContent = 'REJECTED'; stamp.className='stamp ok show'; stampFx(true);
+        saveCareer(); setStats();
+        setTimeout(()=>{ idx++; renderApplicant(); }, 650);
+        return;
+      }
+    }
     let correct = true;
     if(chosen !== c.applyFor) correct = false;
     if(decision===true){ const q = quotas[c.applyFor]; if(q!==undefined && q<=0) correct=false; }
@@ -601,27 +721,47 @@
     setTimeout(()=>{ idx++; renderApplicant(); }, 650);
   }
 
-  function endDay(){
+  // --- Replace endDay to support timed-out firing when queue remains ---
+  function endDay(timedOut = false){
     clearInterval(dayTimer);
+    // If time ran out AND there are still applicants left -> immediate firing
+    if (timedOut && idx < applicants.length) {
+      endGameNow("You couldn’t manage your queue in time. You are fired.");
+      return;
+    }
     showSummary();
   }
 
+  // --- showSummary shows completion + quota preview ---
   function showSummary(){
-    const total = dayStats.hires + dayStats.rejects || 1;
+    const total = (dayStats.hires + dayStats.rejects) || 1;
     const s = document.getElementById('summaryOverlay');
     const b = document.getElementById('summaryBody');
     const pct = (n)=>Math.round((n/total)*100);
+
+    // preview the quota outcome to show in summary (but apply in nextDay)
+    const unmet = Object.entries(quotas).filter(([r,n])=> n>0);
+    const quotaBonus = (unmet.length===0) ? 30 : -(10 * unmet.length);
+
     b.innerHTML = `
       <div>Hires: ${dayStats.hires} • Rejects: ${dayStats.rejects} • Correct: ${dayStats.correct} • Mistakes: ${dayStats.mistakes}</div>
       <div style="margin-top:10px">Accuracy: <strong>${pct(dayStats.correct)}%</strong></div>
+
       <div class="mini" style="margin:10px 0 4px">Hires</div>
       <div class="bar"><div style="width:${pct(dayStats.hires)}%"></div></div>
+
       <div class="mini" style="margin:10px 0 4px">Rejects</div>
       <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.rejects)}%; background:#e27a52"></div></div>
+
       <div class="mini" style="margin:10px 0 4px">Correct vs Mistakes</div>
       <div class="bar"><div style="width:${pct(dayStats.correct)}%; background:#6ed06e"></div></div>
       <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.mistakes)}%; background:#e25b5b"></div></div>
+
+      <div class="mini" style="margin-top:12px"><strong>End-of-day bonuses</strong></div>
+      <div class="mini">• Completion bonus: <strong>+${DAY_COMPLETE_BONUS}</strong> credits</div>
+      <div class="mini">• Quota bonus/penalty: <strong>${quotaBonus>=0?'+':''}${quotaBonus}</strong> credits</div>
     `;
+
     // achievements + leaderboard preview
     const extras = document.getElementById('summaryExtras');
     if(extras){
@@ -637,6 +777,7 @@
         ${achUnlocked.length? `<div style=\"margin-top:8px; color:#8bd9a5\">${achUnlocked.join('<br>')}</div>` : ''}
       `;
     }
+
     s.style.display='flex';
   }
 
@@ -646,11 +787,16 @@
     pushLeaderboard({ name:'You', credits: CAREER.credits, score: CAREER.score });
   }
 
+  // --- nextDay applies completion bonus + quota delta before advancing ---
   function nextDay(){
+    // Calculate quota outcome for the day we just finished
     const unmet = Object.entries(quotas).filter(([r,n])=> n>0);
-    let bonus=0, penalty=0;
-    if(unmet.length===0){ bonus = 30; credits += bonus; CAREER.credits += bonus; }
-    else { penalty = 10*unmet.length; credits -= penalty; CAREER.credits -= penalty; }
+    const quotaDelta = (unmet.length===0) ? 30 : -(10 * unmet.length);
+
+    // Apply completion bonus + quota adjustment
+    const totalDayBonus = DAY_COMPLETE_BONUS + quotaDelta;
+    credits += totalDayBonus;
+    CAREER.credits += totalDayBonus;
     saveCareer();
     if(credits<=0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
 
@@ -675,6 +821,10 @@
       cfg = DAYS[Math.min(dayIndex, DAYS.length-1)];
       cfg = { ...cfg, time: Math.max(60, Math.floor(cfg.time*0.7)), applicants: cfg.applicants+2 };
     }
+    // If Extra time pressure option is enabled, make Day 1 very short (60 seconds)
+    if (pressure && dayIndex === 0) {
+      cfg.time = 60;
+    }
     const miss = mode==='challenge' ? 0.55 : 0.4;
     applicants = Array.from({length: cfg.applicants}, ()=> genApplicant(cfg.roles, miss));
     idx = 0; quotas = {...cfg.quotas};
@@ -685,7 +835,8 @@
     dayTimer = setInterval(()=>{ 
       timeLeft--; updateTimeUi();
       if(rivals && idx<applicants.length){ const elapsed = (Date.now()-lastApplicantAt)/1000; if(elapsed>stealThreshold){ const c = applicants[idx]; if(isAttractive(c)){ stealFx(); el('status').textContent = '⏳ Rival HR hired this candidate first!'; dayStats.rejects++; boss = Math.max(0, boss-3); credits -= 5; CAREER.credits -= 5; idx++; renderApplicant(); } else { lastApplicantAt=Date.now(); } } }
-      if(timeLeft<=0){ clearInterval(dayTimer); endDay(); }
+      // When time is up, end the day and mark timedOut=true (will fire if applicants remain)
+      if(timeLeft<=0){ clearInterval(dayTimer); endDay(true); }
     }, tickMs);
     el('btnHire').disabled=false; el('btnReject').disabled=false; roleSelect.disabled=false;
     el('status').textContent = `Day ${dayIndex+1} — Meet quotas before time runs out.`;
@@ -758,10 +909,82 @@ if(btnRestart){ btnRestart.addEventListener('click', ()=>{ location.reload(); })
   el('btnExport').addEventListener('click', exportCSV);
 
   /* ===================== Economy, Leaderboard & Utilities ===================== */
-  function runSpamFilter(){ if(!started) return; const cost=10; if(credits<cost){ el('status').textContent='Not enough credits to run spam filter.'; wrongFx(); return; } credits-=cost; CAREER.credits-=cost; if(credits<=0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; } let removed=0; const lookahead = applicants.slice(idx, idx+5); const keep = []; lookahead.forEach((c)=>{ if(c.event==='spam'){ removed++; } else { keep.push(c); } }); applicants.splice(idx, 5, ...keep); setStats(); el('status').textContent = removed? `Spam filter removed ${removed} spam CV(s).` : 'No spam detected.'; }
+  function runSpamFilter(){
+    if(!started) return;
+    const cost = 10;
+    if(credits < cost){ el('status').textContent = 'Not enough credits to run spam filter.'; wrongFx(); return; }
+    credits -= cost; CAREER.credits -= cost;
+    if(credits <= 0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
+
+    const c = applicants[idx];
+    if(!c){
+      el('status').textContent = 'No applicant to scan.';
+      setStats();
+      return;
+    }
+
+    // If the currently shown letter is spam -> give immediate bonus and advance / end day
+    if(c.event === 'spam'){
+      const bonus = 10;
+      dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
+      resultsLog.push({
+        day: dayIndex+1,
+        name: c.name,
+        email: c.email,
+        id: c.id,
+        age: c.age,
+        role: c.applyFor,
+        chosen: roleSelect.value,
+        decision: 'spam-filtered',
+        correct: true,
+        years: c.years,
+        skills: c.skills.join('; '),
+        certs: c.certs.join('; '),
+        flags: c.redFlags.join('; '),
+        note: c.note,
+        event: c.event||'',
+        missing: missingFor(c, c.applyFor).join('; '),
+        violations: DAYS[dayIndex].check(c, c.applyFor).join('; '),
+        creditsAfter: credits,
+        timeLeft
+      });
+      el('status').textContent = `Spam filter removed current spam letter — bonus +${bonus} credits.`;
+      stamp.textContent = 'REJECTED'; stamp.className = 'stamp no show'; stampFx(true);
+      // remove current applicant
+      applicants.splice(idx, 1);
+      saveCareer(); setStats();
+      setTimeout(()=>{
+        // if last applicant removed -> finish day, otherwise show next
+        if(idx >= applicants.length) endDay();
+        else renderApplicant();
+      }, 450);
+      return;
+    }
+
+    // Scan lookahead window and remove spam/virus letters (no immediate bonus)
+    let removed = 0;
+    const lookahead = applicants.slice(idx, idx+5);
+    const keep = [];
+    lookahead.forEach((a)=>{ if(a.event === 'spam' || a.event === 'virus'){ removed++; } else { keep.push(a); } });
+    applicants.splice(idx, lookahead.length, ...keep);
+    saveCareer(); setStats();
+    if(removed){
+      el('status').textContent = `Spam filter removed ${removed} spam/malicious CV(s).`;
+      setTimeout(()=>{ if(idx>=applicants.length) endDay(); else renderApplicant(); }, 350);
+    } else {
+      el('status').textContent = 'No spam detected.';
+    }
+  }
+
+  // Leaderboard helpers (define here to avoid ReferenceError when clicking LEADERBOARD)
   function getLeaderboard(){ try{ return JSON.parse(localStorage.getItem(LEADER_KEY)||'[]'); }catch{ return []; } }
   function pushLeaderboard(entry){ const list = getLeaderboard(); list.push({ name: entry.name||'You', credits: entry.credits||0, score: entry.score||0, ts: Date.now() }); list.sort((a,b)=> (b.credits - a.credits) || (b.score - a.score) ); localStorage.setItem(LEADER_KEY, JSON.stringify(list.slice(0,20))); }
-  function showBoard(){ const list = getLeaderboard(); const html = list.length? list.slice(0,20).map((e,i)=>`${i+1}. ${e.name} — ${e.credits} cr • score ${e.score}`).join('<br>') : 'No entries yet.'; const box = document.getElementById('boardList'); if(box) box.innerHTML = html; const ov = document.getElementById('boardOverlay'); if(ov) ov.style.display='flex'; }
+  function showBoard(){
+    const list = getLeaderboard();
+    const html = list.length? list.slice(0,20).map((e,i)=>`${i+1}. ${e.name} — ${e.credits} cr • score ${e.score}`).join('<br>') : 'No entries yet.';
+    const box = document.getElementById('boardList'); if(box) box.innerHTML = html;
+    const ov = document.getElementById('boardOverlay'); if(ov) ov.style.display='flex';
+  }
 })();
 </script>
 </body>
