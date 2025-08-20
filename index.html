@@ -557,7 +557,10 @@
   }
 
   /* ===================== STATE ===================== */
-  let dayIndex=0, applicants=[], idx=0, score=0, warnings=0, credits=200; let dayTimer=null, timeLeft=0; let quotas={}; let started=false; let currentCheck=(c,chosen)=>[];
+  let dayIndex=0, applicants=[], idx=0, score=0, warnings=0, credits=200;
+  let dayTimer=null, timeLeft=0; let quotas={}; let started=false;
+  // currentDayCfg holds the active day configuration (DAYS entry or generated cfg for endless/challenge)
+  let currentDayCfg = null;
   let dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
   let boss=100; let mode='career'; let rivals=true; let pressure=false; let lastApplicantAt=0; let stealThreshold=12; let officeLvl=1;
   const LEADER_KEY='hr_leaderboard_v1'; const ACHV_KEY='hr_achievements_v1';
@@ -566,7 +569,8 @@
   /* ===================== DOM & HELPERS ===================== */
   const el = id=>document.getElementById(id);
   const stamp = el('stamp'); const roleSelect = el('roleSelect'); const reqList = el('reqList');
-
+  // (removed early stub for `verdict` to avoid accidental calls to a placeholder)
+  
   function setStats(){
     el('left').textContent = Math.max(0, (applicants.length - idx));
     const attempts = score + warnings; const acc = attempts? Math.round((score/attempts)*100):100;
@@ -580,33 +584,155 @@
   function renderRoleOptions(roles){ roleSelect.innerHTML=""; roles.forEach(r=>{ const opt=document.createElement('option'); opt.value=r; opt.textContent=r; roleSelect.appendChild(opt); }); }
   function renderReqs(role){ const needs = VACANCIES[role]?.required || []; reqList.innerHTML=""; needs.forEach(req=>{ const row=document.createElement('div'); row.className='item'; row.innerHTML = `<span>${req}</span><span class="badge" id="need-${cssSafe(req)}">—</span>`; reqList.appendChild(row); }); }
   function cssSafe(s){ return String(s).replace(/[^a-z0-9]+/gi,'_'); }
-  function renderRuleList(day){ const ul = el('dayRules'); ul.innerHTML=""; DAYS[day].rules.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); }); }
 
-  function renderApplicant(){
-    if(idx>=applicants.length){ endDay(); return; }
-    const c = applicants[idx];
-    el('fromName').textContent=c.name; el('fromEmail').textContent=c.email; el('cid').textContent=c.id; el('recv').textContent=c.ts;
-    el('applyFor').textContent=c.applyFor; el('cvName').textContent=c.name; el('cvAge').textContent=c.age; el('cvRole').textContent=c.applyFor;
-    el('cvSkills').textContent=c.skills.join(', '); el('cvNote').textContent=c.note; el('cvExp').textContent=c.years; el('cvCerts').textContent=(c.certs.join(', ')||'—'); el('cvFlags').textContent=(c.redFlags.join(', ')||'—');
-    const imgEl = el('portraitImg'); imgEl.src=c.img; imgEl.alt = `Avatar of ${c.name}`;
-    roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.'; lastApplicantAt=Date.now(); setStats();
+  // Single authoritative renderRuleList that uses currentDayCfg if present
+  function renderRuleList(day){
+    const ul = el('dayRules');
+    if(!ul) return;
+    ul.innerHTML = "";
+    const rules = (currentDayCfg && currentDayCfg.rules) ? currentDayCfg.rules : (DAYS[day] && DAYS[day].rules ? DAYS[day].rules : []);
+    rules.forEach(t=>{
+      const li=document.createElement('li');
+      li.textContent=t;
+      ul.appendChild(li);
+    });
   }
 
-  function missingFor(candidate, role){ const needs = VACANCIES[role]?.required || []; return needs.filter(req=>!candidate.skills.includes(req)); }
-  function updateDiff(){ if(idx>=applicants.length) return {miss:[], extraViol:[]}; const c=applicants[idx]; const role=roleSelect.value; const needs = VACANCIES[role]?.required || []; needs.forEach(req=>{ const b=el('need-'+cssSafe(req)); if(!b) return; if(c.skills.includes(req)){ b.textContent='OK'; b.className='badge match'; } else { b.textContent='MISSING'; b.className='badge mismatch'; } }); const miss = missingFor(c,role); const extraViol = DAYS[dayIndex].check(c, role); const message = [ (miss.length? ('Missing: '+miss.join(', ')) : 'No missing required skills.'), (extraViol.length? (' Rules: '+extraViol.join('; ')) : '') ].join(''); el('diffBox').textContent = message || '—'; return {miss, extraViol}; }
-  roleSelect.addEventListener('change', ()=>{ if(!started) return; updateDiff(); setStats(); beep(750,0.05,'triangle',0.02); });
-  function salaryOf(role){ const needs=(VACANCIES[role]?.required||[]).length; return 10 + needs*5; }
-  function isAttractive(candidate){ const missingApplied = missingFor(candidate, candidate.applyFor); const extra = DAYS[dayIndex]?.check ? DAYS[dayIndex].check(candidate, candidate.applyFor) : []; return missingApplied.length===0 && extra.length===0; }
+  function renderApplicant(){
+     if(idx>=applicants.length){ endDay(); return; }
+     const c = applicants[idx];
+     // Defensive rendering to avoid runtime errors (prevents freeze on missing data)
+     const fromName = el('fromName'); if(fromName) fromName.textContent = c.name || '—';
+     const fromEmail = el('fromEmail'); if(fromEmail) fromEmail.textContent = c.email || '—';
+     const cid = el('cid'); if(cid) cid.textContent = c.id || '—';
+     const recv = el('recv'); if(recv) recv.textContent = c.ts || '—';
+     const applyForEl = el('applyFor'); if(applyForEl) applyForEl.textContent = c.applyFor || '—';
+     const cvName = el('cvName'); if(cvName) cvName.textContent = c.name || '—';
+     const cvAge = el('cvAge'); if(cvAge) cvAge.textContent = (c.age != null ? c.age : '—');
+     const cvRole = el('cvRole'); if(cvRole) cvRole.textContent = c.applyFor || '—';
+     // guard against missing/invalid skills
+     const cvSkills = el('cvSkills'); if(cvSkills) cvSkills.textContent = (Array.isArray(c.skills) && c.skills.length) ? c.skills.join(', ') : '—';
+     const cvNote = el('cvNote'); if(cvNote) cvNote.textContent = c.note || '—';
+     const cvExp = el('cvExp'); if(cvExp) cvExp.textContent = (c.years != null ? c.years : '—');
+     const cvCerts = el('cvCerts'); if(cvCerts) cvCerts.textContent = (Array.isArray(c.certs) && c.certs.length) ? c.certs.join(', ') : '—';
+     const cvFlags = el('cvFlags'); if(cvFlags) cvFlags.textContent = (Array.isArray(c.redFlags) && c.redFlags.length) ? c.redFlags.join(', ') : '—';
+     const imgEl = el('portraitImg'); if(imgEl){ imgEl.src = c.img || ''; imgEl.alt = `Avatar of ${c.name || '—'}`; }
+     roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.'; lastApplicantAt=Date.now(); setStats();
+   }
 
-  function verdict(decision){ if(!started) return; const c = applicants[idx]; const chosen = roleSelect.value; const {miss} = updateDiff(); const extra = DAYS[dayIndex].check(c, c.applyFor);
+  function missingFor(candidate, role){
+    const needs = VACANCIES[role]?.required || [];
+    const skills = (candidate && Array.isArray(candidate.skills)) ? candidate.skills : [];
+    return needs.filter(req => !skills.includes(req));
+  }
+
+  function updateDiff(){
+    if(idx>=applicants.length) return {miss:[], extraViol:[]};
+    const c = applicants[idx];
+    const role = roleSelect ? roleSelect.value : '';
+    const needs = VACANCIES[role]?.required || [];
+    const skills = (c && Array.isArray(c.skills)) ? c.skills : [];
+    needs.forEach(req=>{
+      const b = el('need-'+cssSafe(req));
+      if(!b) return;
+      if(skills.includes(req)){ b.textContent='OK'; b.className='badge match'; }
+      else { b.textContent='MISSING'; b.className='badge mismatch'; }
+    });
+    const miss = missingFor(c, role);
+    const extraViol = (currentDayCfg && typeof currentDayCfg.check === 'function') ? currentDayCfg.check(c, role) : (DAYS[dayIndex] && typeof DAYS[dayIndex].check === 'function' ? DAYS[dayIndex].check(c, role) : []);
+    const message = [
+      (miss.length ? ('Missing: '+miss.join(', ')) : 'No missing required skills.'),
+      (extraViol.length ? (' Rules: '+extraViol.join('; ')) : '')
+    ].join('');
+    const diffBox = el('diffBox');
+    if(diffBox) diffBox.textContent = message || '—';
+    return {miss, extraViol};
+  }
+
+  // Safe salary calculation used when hiring (defaults if role missing)
+  function salaryOf(role){
+    try{
+      const reqCount = VACANCIES[role] && Array.isArray(VACANCIES[role].required) ? VACANCIES[role].required.length : 0;
+      return 10 + 5 * reqCount;
+    }catch(e){
+      return 10;
+    }
+  }
++
+  function isAttractive(candidate){
+    const missingApplied = missingFor(candidate, candidate.applyFor);
+    const extra = (currentDayCfg && typeof currentDayCfg.check === 'function') ? currentDayCfg.check(candidate, candidate.applyFor) : (DAYS[dayIndex] && typeof DAYS[dayIndex].check === 'function' ? DAYS[dayIndex].check(candidate, candidate.applyFor) : []);
+    return missingApplied.length===0 && extra.length===0;
+  }
+
+  /* ===================== Spam filter & Leaderboard helpers ===================== */
+  function runSpamFilter(){
+    if(!started) return;
+    const c = applicants[idx];
+    if(!c){ el('status').textContent = 'No applicant to scan.'; return; }
+
+    // If visible letter is spam -> immediate bonus and advance (no cost)
+    if(c.event === 'spam'){
+      const bonus = 10;
+      dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
+      resultsLog.push({
+        day: dayIndex+1, name: c.name, email: c.email, id: c.id, age: c.age, role: c.applyFor, chosen: roleSelect.value,
+        decision: 'spam-filtered', correct: true, years: c.years, skills: (Array.isArray(c.skills)?c.skills.join('; '):''), certs: (Array.isArray(c.certs)?c.certs.join('; '):''),
+        flags: (Array.isArray(c.redFlags)?c.redFlags.join('; '):''), note: c.note, event: c.event||'', missing: missingFor(c, c.applyFor).join('; '),
+        violations: (currentDayCfg && currentDayCfg.check) ? currentDayCfg.check(c, c.applyFor).join('; ') : (DAYS[dayIndex] && DAYS[dayIndex].check ? DAYS[dayIndex].check(c, c.applyFor).join('; ') : ''), creditsAfter: credits, timeLeft
+      });
+      el('status').textContent = `Spam filter removed current spam letter — bonus +${bonus} credits.`;
+      stamp.textContent = 'REJECTED'; stamp.className = 'stamp no show'; stampFx(true);
+      applicants.splice(idx, 1);
+      saveCareer(); setStats();
+      setTimeout(()=>{
+        if(idx >= applicants.length) endDay(); else renderApplicant();
+      }, 450);
+      return;
+    }
+
+    // Otherwise pay cost and scan lookahead window
+    const cost = 10;
+    if(credits < cost){ el('status').textContent = 'Not enough credits to run spam filter.'; wrongFx(); return; }
+    credits -= cost; CAREER.credits -= cost;
+    if(credits <= 0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
+
+    let removed = 0;
+    const lookahead = applicants.slice(idx, idx+5);
+    const keep = [];
+    lookahead.forEach(a=>{ if(a.event === 'spam' || a.event === 'virus'){ removed++; } else { keep.push(a); } });
+    applicants.splice(idx, lookahead.length, ...keep);
+    saveCareer(); setStats();
+    if(removed){
+      el('status').textContent = `Spam filter removed ${removed} spam/malicious CV(s).`;
+      setTimeout(()=>{ if(idx>=applicants.length) endDay(); else renderApplicant(); }, 350);
+    } else {
+      el('status').textContent = 'No spam detected.';
+    }
+  }
+
+  function getLeaderboard(){ try{ return JSON.parse(localStorage.getItem(LEADER_KEY)||'[]'); }catch{ return []; } }
+  function pushLeaderboard(entry){ const list = getLeaderboard(); list.push({ name: entry.name||'You', credits: entry.credits||0, score: entry.score||0, ts: Date.now() }); list.sort((a,b)=> (b.credits - a.credits) || (b.score - a.score) ); localStorage.setItem(LEADER_KEY, JSON.stringify(list.slice(0,20))); }
+  function showBoard(){
+    const list = getLeaderboard();
+    const html = list.length? list.slice(0,20).map((e,i)=>`${i+1}. ${e.name} — ${e.credits} cr • score ${e.score}`).join('<br>') : 'No entries yet.';
+    const box = document.getElementById('boardList'); if(box) box.innerHTML = html;
+    const ov = document.getElementById('boardOverlay'); if(ov) ov.style.display='flex';
+  }
+
+  function verdict(decision){
+    if(!started) return;
+    const c = applicants[idx];
+    if(!c) return;
+    const chosen = roleSelect.value;
+    const {miss} = updateDiff();
+    const extraRules = (currentDayCfg && typeof currentDayCfg.check === 'function') ? currentDayCfg.check(c, c.applyFor) : (DAYS[dayIndex] && typeof DAYS[dayIndex].check === 'function' ? DAYS[dayIndex].check(c, c.applyFor) : []);
     // Special handling for malicious/harassment emails (virus)
     if(c.event === 'virus'){
       if(decision === true){
-        // Hiring a malicious/virus email infects system -> immediate game over
         endGameNow("Your computer was infected with a virus. Be careful next time. But for today, you are fired.");
         return;
       } else {
-        // Correctly rejecting a malicious email -> bonus credits
         const bonus = 15;
         dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
         resultsLog.push({
@@ -626,7 +752,7 @@
           note: c.note,
           event: c.event||'',
           missing: missingFor(c, c.applyFor).join('; '),
-          violations: extra.join('; '),
+          violations: extraRules.join('; '),
           creditsAfter: credits,
           timeLeft
         });
@@ -637,10 +763,9 @@
         return;
       }
     }
-    // Special handling for spam emails: rejecting is good, hiring causes a penalty
+    // Special handling for spam emails
     if(c.event === 'spam'){
       if(decision === true){
-        // Hiring spam -> immediate penalty
         const penalty = 25;
         warnings++; dayStats.mistakes++; credits -= penalty; CAREER.warnings++; CAREER.credits -= penalty; boss = Math.max(0, boss-8);
         resultsLog.push({
@@ -660,7 +785,7 @@
           note: c.note,
           event: c.event||'',
           missing: missingFor(c, c.applyFor).join('; '),
-          violations: extra.join('; '),
+          violations: extraRules.join('; '),
           creditsAfter: credits,
           timeLeft
         });
@@ -670,7 +795,6 @@
         setTimeout(()=>{ idx++; renderApplicant(); }, 650);
         return;
       } else {
-        // Rejecting spam -> treat as correct (reward)
         const reward = 10;
         score++; dayStats.correct++; dayStats.rejects++; credits += reward; CAREER.score++; CAREER.credits += reward;
         resultsLog.push({
@@ -690,7 +814,7 @@
           note: c.note,
           event: c.event||'',
           missing: missingFor(c, c.applyFor).join('; '),
-          violations: extra.join('; '),
+          violations: extraRules.join('; '),
           creditsAfter: credits,
           timeLeft
         });
@@ -701,14 +825,14 @@
         return;
       }
     }
+    // continue with normal verdict flow...
     let correct = true;
     if(chosen !== c.applyFor) correct = false;
     if(decision===true){ const q = quotas[c.applyFor]; if(q!==undefined && q<=0) correct=false; }
     const missingApplied = missingFor(c, c.applyFor);
-    if(decision===true && (missingApplied.length>0 || extra.length>0)) correct=false;
-    if(decision===false && (missingApplied.length===0 && extra.length===0)) correct=false;
+    if(decision===true && (missingApplied.length>0 || extraRules.length>0)) correct=false;
+    if(decision===false && (missingApplied.length===0 && extraRules.length===0)) correct=false;
     if(decision===true && c.event==='scandal') correct=false;
-
     if(correct){
       score++; dayStats.correct++; credits += 10; CAREER.score++; CAREER.credits += 10; boss = Math.min(100, boss+2); bossFx();
       if(decision===true){
@@ -720,8 +844,7 @@
         el('status').textContent = '✅ Good call. +10 credits earned.';
       }
       stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; stampFx(decision);
-    }
-    else {
+    } else {
       warnings++; dayStats.mistakes++; credits -= 10; CAREER.warnings++; CAREER.credits -= 10; boss = Math.max(0, boss-6);
       if(decision===true){ const sal = salaryOf(c.applyFor); const penalty = 15; credits -= (sal+penalty); CAREER.credits -= (sal+penalty); }
       stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; wrongFx(); el('status').textContent = '❌ Incorrect judgment.';
@@ -746,7 +869,7 @@
       note: c.note,
       event: c.event||'',
       missing: missingApplied.join('; '),
-      violations: extra.join('; '),
+      violations: extraRules.join('; '),
       creditsAfter: credits,
       timeLeft
     });
@@ -755,6 +878,9 @@
     setTimeout(()=>{ idx++; renderApplicant(); }, 650);
   }
 
+  // Expose verdict globally to ensure event handlers / inline onclicks can call it reliably
+  window.verdict = verdict;
+  
   // --- Replace endDay to support timed-out firing when queue remains ---
   function endDay(timedOut = false){
     clearInterval(dayTimer);
@@ -844,11 +970,11 @@
   }
 
   function startDay(){
-    let cfg = DAYS[dayIndex];
+     let cfg = DAYS[dayIndex];
     if(mode==='endless'){
       const allRoles = Object.keys(VACANCIES);
       const count = 8 + Math.floor(Math.random()*5);
-      const t = 90 + Math.floor(Math.random()*60);
+           const t = 90 + Math.floor(Math.random()*60);
       cfg = { time: t, applicants: count, roles: allRoles.slice(0).sort(()=>Math.random()-0.5).slice(0, Math.min(10, allRoles.length)), quotas:{}, rules:["Endless — keep going!"], check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate'); return out; } };
     }
     if(mode==='challenge'){
@@ -856,9 +982,9 @@
       cfg = { ...cfg, time: Math.max(60, Math.floor(cfg.time*0.7)), applicants: cfg.applicants+2 };
     }
     // If Extra time pressure option is enabled, make Day 1 very short (60 seconds)
-    if (pressure && dayIndex === 0) {
-      cfg.time = 60;
-    }
+    if (pressure && dayIndex === 0) { cfg.time = 60; }
+    // Save active day config for safe access in checks
+    currentDayCfg = cfg;
     const miss = mode==='challenge' ? 0.55 : 0.4;
     applicants = Array.from({length: cfg.applicants}, ()=> genApplicant(cfg.roles, miss));
     idx = 0; quotas = {...cfg.quotas};
@@ -866,10 +992,16 @@
     renderRoleOptions(cfg.roles); renderRuleList(Math.min(dayIndex, DAYS.length-1));
     timeLeft = cfg.time; updateTimeUi(); clearInterval(dayTimer);
     const tickMs = pressure? 800 : 1000;
-    dayTimer = setInterval(()=>{ 
+    dayTimer = setInterval(()=>{
       timeLeft--; updateTimeUi();
-      if(rivals && idx<applicants.length){ const elapsed = (Date.now()-lastApplicantAt)/1000; if(elapsed>stealThreshold){ const c = applicants[idx]; if(isAttractive(c)){ stealFx(); el('status').textContent = '⏳ Rival HR hired this candidate first!'; dayStats.rejects++; boss = Math.max(0, boss-3); credits -= 5; CAREER.credits -= 5; idx++; renderApplicant(); } else { lastApplicantAt=Date.now(); } } }
-      // When time is up, end the day and mark timedOut=true (will fire if applicants remain)
+      if(rivals && idx<applicants.length){
+        const elapsed = (Date.now()-lastApplicantAt)/1000;
+        if(elapsed>stealThreshold){
+          const c = applicants[idx];
+          if(isAttractive(c)){ stealFx(); el('status').textContent = '⏳ Rival HR hired this candidate first!'; dayStats.rejects++; boss = Math.max(0, boss-3); credits -= 5; CAREER.credits -= 5; idx++; renderApplicant(); }
+          else { lastApplicantAt=Date.now(); }
+        }
+      }
       if(timeLeft<=0){ clearInterval(dayTimer); endDay(true); }
     }, tickMs);
     el('btnHire').disabled=false; el('btnReject').disabled=false; roleSelect.disabled=false;
@@ -919,106 +1051,29 @@ if(btnBoard){ btnBoard.addEventListener('click', ()=>{ showBoard(); }); }
 if(btnCloseBoard){ btnCloseBoard.addEventListener('click', ()=>{ if(boardOverlay) boardOverlay.style.display='none'; }); }
 if(btnRestart){ btnRestart.addEventListener('click', ()=>{ location.reload(); }); }
 
-/* ===================== Keyboard Shortcuts ===================== */
+  // Attach Hire / Reject / Export buttons and keyboard shortcuts
+  const btnHireEl = el('btnHire');
+  const btnRejectEl = el('btnReject');
+  const btnExportEl = el('btnExport');
+  if(btnHireEl) btnHireEl.addEventListener('click', ()=>window.verdict(true));
+  if(btnRejectEl) btnRejectEl.addEventListener('click', ()=>window.verdict(false));
+  if(btnExportEl) btnExportEl.addEventListener('click', exportCSV);
+  
+  // Keyboard shortcuts: H = Hire, R = Reject, S = Spam filter, Space = Quick Reject/Next, ? = Help
   document.addEventListener('keydown', (e)=>{
     // Help toggle works anytime
     if(e.key==='?'){
       e.preventDefault();
-      if(helpOverlay){ helpOverlay.style.display = (helpOverlay.style.display==='flex'?'none':'flex'); }
+      if(helpOverlay) helpOverlay.style.display = (helpOverlay.style.display==='flex'?'none':'flex');
       return;
     }
     if(!started) return;
     if(e.target && (e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA')) return;
-    if(e.key==='h' || e.key==='H'){ e.preventDefault(); document.getElementById('btnHire').click(); }
-    if(e.key==='r' || e.key==='R'){ e.preventDefault(); document.getElementById('btnReject').click(); }
-    if(e.code==='Space'){ e.preventDefault(); document.getElementById('btnReject').click(); } // quick reject/next
+    if(e.key==='h' || e.key==='H'){ e.preventDefault(); if(btnHireEl) btnHireEl.click(); }
+    if(e.key==='r' || e.key==='R'){ e.preventDefault(); if(btnRejectEl) btnRejectEl.click(); }
+    if(e.key==='s' || e.key==='S'){ e.preventDefault(); if(btnSpam) btnSpam.click(); }
+    if(e.code==='Space'){ e.preventDefault(); if(btnRejectEl) btnRejectEl.click(); }
   });
-
-  /* ===================== INIT ===================== */
-  (function seed(){ el('left').textContent='0'; el('acc').textContent='100%'; el('warns').textContent='0'; el('credits').textContent='200'; el('score').textContent='0'; el('day').textContent='1'; el('time').textContent='00:00'; el('career').textContent = CAREER.score; })();
-
-  // Buttons
-  el('btnHire').addEventListener('click', ()=>verdict(true));
-  el('btnReject').addEventListener('click', ()=>verdict(false));
-  el('btnExport').addEventListener('click', exportCSV);
-
-  /* ===================== Economy, Leaderboard & Utilities ===================== */
-  function runSpamFilter(){
-    if(!started) return;
-    const cost = 10;
-    if(credits < cost){ el('status').textContent = 'Not enough credits to run spam filter.'; wrongFx(); return; }
-    credits -= cost; CAREER.credits -= cost;
-    if(credits <= 0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
-
-    const c = applicants[idx];
-    if(!c){
-      el('status').textContent = 'No applicant to scan.';
-      setStats();
-      return;
-    }
-
-    // If the currently shown letter is spam -> give immediate bonus and advance / end day
-    if(c.event === 'spam'){
-      const bonus = 10;
-      dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
-      resultsLog.push({
-        day: dayIndex+1,
-        name: c.name,
-        email: c.email,
-        id: c.id,
-        age: c.age,
-        role: c.applyFor,
-        chosen: roleSelect.value,
-        decision: 'spam-filtered',
-        correct: true,
-        years: c.years,
-        skills: c.skills.join('; '),
-        certs: c.certs.join('; '),
-        flags: c.redFlags.join('; '),
-        note: c.note,
-        event: c.event||'',
-        missing: missingFor(c, c.applyFor).join('; '),
-        violations: DAYS[dayIndex].check(c, c.applyFor).join('; '),
-        creditsAfter: credits,
-        timeLeft
-      });
-      el('status').textContent = `Spam filter removed current spam letter — bonus +${bonus} credits.`;
-      stamp.textContent = 'REJECTED'; stamp.className = 'stamp no show'; stampFx(true);
-      // remove current applicant
-      applicants.splice(idx, 1);
-      saveCareer(); setStats();
-      setTimeout(()=>{
-        // if last applicant removed -> finish day, otherwise show next
-        if(idx >= applicants.length) endDay();
-        else renderApplicant();
-      }, 450);
-      return;
-    }
-
-    // Scan lookahead window and remove spam/virus letters (no immediate bonus)
-    let removed = 0;
-    const lookahead = applicants.slice(idx, idx+5);
-    const keep = [];
-    lookahead.forEach((a)=>{ if(a.event === 'spam' || a.event === 'virus'){ removed++; } else { keep.push(a); } });
-    applicants.splice(idx, lookahead.length, ...keep);
-    saveCareer(); setStats();
-    if(removed){
-      el('status').textContent = `Spam filter removed ${removed} spam/malicious CV(s).`;
-      setTimeout(()=>{ if(idx>=applicants.length) endDay(); else renderApplicant(); }, 350);
-    } else {
-      el('status').textContent = 'No spam detected.';
-    }
-  }
-
-  // Leaderboard helpers (define here to avoid ReferenceError when clicking LEADERBOARD)
-  function getLeaderboard(){ try{ return JSON.parse(localStorage.getItem(LEADER_KEY)||'[]'); }catch{ return []; } }
-  function pushLeaderboard(entry){ const list = getLeaderboard(); list.push({ name: entry.name||'You', credits: entry.credits||0, score: entry.score||0, ts: Date.now() }); list.sort((a,b)=> (b.credits - a.credits) || (b.score - a.score) ); localStorage.setItem(LEADER_KEY, JSON.stringify(list.slice(0,20))); }
-  function showBoard(){
-    const list = getLeaderboard();
-    const html = list.length? list.slice(0,20).map((e,i)=>`${i+1}. ${e.name} — ${e.credits} cr • score ${e.score}`).join('<br>') : 'No entries yet.';
-    const box = document.getElementById('boardList'); if(box) box.innerHTML = html;
-    const ov = document.getElementById('boardOverlay'); if(ov) ov.style.display='flex';
-  }
 })();
 </script>
 </body>

@@ -1,96 +1,90 @@
 # qasinchuk.github.io
 # 🎮 CVScan — Retro Hiring Simulator
 
-CVScan is a retro, Papers, Please–inspired hiring sim. Review randomized CVs, match them to job vacancies, and decide who gets hired or rejected — while your **credits**, **boss satisfaction**, and **career score** hang in the balance.
+CVScan is a retro, Papers‑Please–inspired hiring simulator. Review randomized CVs and emails, match candidates to vacancies, and decide who to hire or reject while managing credits, boss satisfaction and your career score.
+
+This README reflects recent gameplay and UI updates implemented in index.html (spam/virus handling, spam filter behavior, extra time pressure, hotkeys, leaderboard fixes and defensive rendering).
 
 ---
 
-## 📝 Game Concept
+## Quick Summary of Changes
 
-Take your seat at the company terminal. CVs flood in. Quotas tick down. Each choice you make shapes your career trajectory and the survival of the company.
-
-Your mission: **hire the right candidates, reject the wrong ones, and build the ultimate IT team.**
-
----
-
-## 🎯 Features (updated)
-
-- **Dynamic CV Inbox**: Randomized candidates with portraits, skills, personalities, notes and occasional hidden issues (fake diploma, unverifiable refs, etc.).
-- **Expanded Traits**: Personality quirks, red flags, and rare easter‑egg names.
-- **Vacancies**: QA, Frontend/React/Angular/Vue, Backend/Java/Python/Go/.NET, Mobile, Data/ML, DevOps/SRE/Cloud/Sec, DBA, UI/UX, Support, Tech Lead.
-- **Story Events**:
-  - Spam — frequent bulk submissions.
-  - Virus / Harassment — suspicious emails/attachments (reject to earn a bonus; hiring one ends the run).
-  - CEO’s Nephew (nepotism pressure).
-  - Legend (rare high performer).
-  - VIP (referral — bonus on correct hire).
-  - Scandal (fake candidate — avoid hiring).
-- **Spam rules & consequences**:
-  - Rejecting spam grants a small reward.
-  - Hiring a spam letter applies a significant penalty (credits + warnings).
-  - The Spam Filter scans upcoming CVs (costs credits). If the currently shown letter is spam, using the filter gives an immediate bonus and advances to the next applicant; otherwise it scans a look‑ahead window and removes spam/malicious CVs without the immediate bonus.
-- **Virus handling**:
-  - Rejecting a malicious/harassment (virus) email grants a bonus.
-  - Hiring such an email triggers an immediate game over (computer infected).
-- **Boss & Office**: Boss satisfaction reacts to accuracy; office “level” rises with career score.
-- **Rivals (optional)**: If enabled, rivals can auto-hire attractive candidates when you hesitate.
-- **Economy & Salaries**: Correct decisions +10 credits; mistakes −10 (warning). Every hire deducts salary = `10 + 5 × (# required skills)`. VIP hires add a small bonus. Quota/Day completion bonuses apply.
-- **Game Modes**:
-  - Career — day sequence with quotas and summaries.
-  - Endless — randomized waves; survive as long as possible.
-  - Challenge — stricter timers, more applicants, higher missing‑skill chance.
-- **Extra time pressure**: When enabled, Day 1 is shortened to 60 seconds (high-pressure start). Other timing penalties apply in Challenge mode as well.
-- **Display / UI**:
-  - The DISCREPANCIES panel is hidden by default to increase challenge.
-  - Overlays: Start, Help, Day Summary, Leaderboard, Game Over.
-  - Leaderboard fixed and saved to localStorage.
-- **Audio Controls & Hotkeys**:
-  - Toggle sound, adjust volume.
-  - Hotkeys: `H` = Hire, `R` = Reject, `Space` = quick Reject/Next, `?` = Help.
-- **Export & Logging**:
-  - Export game run to CSV (decision log includes event, missing required, rule violations, credits after, time left).
-- **Persistence**:
-  - Sound settings, career stats and leaderboard stored in localStorage.
+- Spam filter:
+  - If the currently visible letter is spam, running the Spam Filter grants an immediate bonus and advances to the next applicant (no spam-filter cost in this case).
+  - Otherwise the filter costs credits and scans a short look‑ahead window to remove spam/malicious CVs (no immediate bonus).
+  - Rejecting spam grants a small reward; hiring spam applies a significant penalty (credits + warnings).
+- Virus / Harassment emails:
+  - Rejecting yields a larger bonus.
+  - Hiring a virus email triggers an immediate game over (computer infected).
+- Economy & penalties:
+  - Correct decisions: +10 credits.
+  - Mistakes: −10 credits plus a warning.
+  - Hiring salary cost: 10 + 5 × (# required skills).
+  - VIP, Legend and special events implemented with bonuses/penalties.
+- Extra time pressure:
+  - When enabled on Start, Day 1 is shortened to 60 seconds (high‑pressure start).
+- Hotkeys:
+  - H = Hire, R = Reject, S = Spam Filter, Space = Quick Reject/Next, ? = Help.
+- UI / Stability improvements:
+  - Defensive rendering to avoid freezes on missing data (missing fields show placeholders).
+  - Fixes to prevent game freeze on missing DAYS data; active day config saved to currentDayCfg.
+  - Spam, virus and leaderboard handlers added to avoid ReferenceErrors.
+- Leaderboard & Export:
+  - Leaderboard saved to localStorage and shown via overlay.
+  - Export CSV log (decisions include event, missing required, violations, credits after, time left).
+- Misc:
+  - Discrepancies panel is hidden by default (increased challenge).
+  - Rivals (optional) may auto-hire attractive candidates when you delay.
 
 ---
 
-## 📖 How to Play (quick)
+## How to Play (updated)
 
-1. Click START and choose a mode. Optionally enable **Rivals** and **Extra time pressure**.
-2. Read the email + CV in the center panel.
-3. Select the matching vacancy on the right (should match “Applied Role”).
-4. Compare CV skills with Required Skills and follow Day Rules.
-5. Decide: **Hire** if requirements and rules are satisfied; otherwise **Reject**.
-6. Use **Spam Filter** to clean spam (costs credits). If the visible letter is spam the filter gives a bonus and advances you forward.
+1. Open the page and click START. Optionally enable Rivals and Extra time pressure.
+2. Read the incoming email + CV in the center panel.
+3. Select the correct vacancy (should match the applicant’s "Applied Role").
+4. Compare CV skills to Required Skills — each requirement shows OK / MISSING.
+5. Review Day Rules (rules/checks apply per day). The Discrepancies panel may be hidden.
+6. Decide:
+   - HIRE if the candidate matches requirements and rules.
+   - REJECT otherwise.
+7. Use Spam Filter:
+   - If the current visible letter is spam, running the filter grants an immediate bonus and advances to the next applicant (no cost).
+   - Otherwise it costs credits and removes spam/malicious CVs in a lookahead window.
 
-Scoring & Economy: Correct decisions +10 credits; mistakes −10 (warning). Every hire deducts salary (`10 + 5 × requirements`). VIP hires add a small bonus. Meet all quotas for a day‑end bonus.
-
-Game Over: If credits reach ≤ 0, or you hire a malicious/virus email, the game ends with “Now it's your turn to find a new job. You were fired.”
-
----
-
-## 🕹️ Why Play?
-
-CVScan blends workplace satire with fast decision‑making. It's about spotting the right skills, managing pressure, balancing quotas and budgets, and surviving office politics.
+Scoring & Economy: Correct decisions +10 credits, mistakes −10 credits (+warning). Hiring deducts salary = 10 + 5 × (# required skills). Rejecting spam rewards; hiring spam penalizes heavily. Hiring a virus email ends the game.
 
 ---
 
-## 🔗 Links
+## Controls & Hotkeys
 
-- Project site / demo: (local)
-- Repository: (local)
-
----
-
-## 👥 Credits
-
-- **Programming & Design** – Igor Sinchuk  
-- **Release date** – 2025
+- H — Hire
+- R — Reject
+- S — Spam Filter
+- Space — Quick Reject / Next
+- ? — Open Help overlay
+- UI buttons: Start, Hire, Reject, Spam Filter, Leaderboard, Export CSV
 
 ---
 
-## Development
+## Events & Consequences
 
-- Open `index.html` in a modern browser.
-- Data (sound settings, career, leaderboard) is stored in `localStorage`.
-- To test spam/virus behaviors: enable Extra pressure (if desired), start a run, and use the Spam Filter / Hire / Reject actions when
+- Spam: bulk submissions; reject = reward, hire = penalty.
+- Virus/Harassment: suspicious attachments/messages; reject = bonus, hire = immediate game over.
+- VIP / Legend / Scandal / CEO's Nephew: special events with bonuses/penalties according to rules.
+
+---
+
+## Development & Testing
+
+- Open index.html in a modern browser (tested on macOS).
+- Game state, sound settings and leaderboard persist in localStorage.
+- To test spam/virus behavior: start a run and interact with Spam Filter / Hire / Reject when event CVs appear.
+- If you see console errors, check that index.html includes the latest helper definitions (runSpamFilter, showBoard, salaryOf, verdict exposed properly) and that DOM ids (btnStart, btnHire, btnReject, btnSpam, boardOverlay, boardList) exist in the page.
+
+---
+
+## Credits
+
+- Programming & Design — Igor Sinchuk  
+- Last updated — 18 Aug 2025
