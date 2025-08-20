@@ -136,11 +136,11 @@
     <section class="panel stats">
       <h3>CONSOLE</h3>
       <div class="statbox">
-        <div class="meter"><div class="label mini">Applicants Left</div><div class="val" id="left">0</div></div>
+        <div class="meter"><div class="label mini">Applicants</div><div class="val" id="left">0</div></div>
         <div class="meter"><div class="label mini">Accuracy</div><div class="val" id="acc">100%</div></div>
         <div class="meter"><div class="label mini">Warnings</div><div class="val" id="warns">0</div></div>
         <div class="rules mini">
-          <div><strong>Rules:</strong> (H = hire, R = reject, Space = reject/next)</div>
+          <div><strong>Hotkeys:</strong> (H = hire, R = reject, Space = reject/next, S = Spam)</div>
           <ol id="rulesList" style="margin:6px 0 0 16px; padding:0"></ol>
         </div>
       </div>
@@ -215,7 +215,7 @@
 <!-- START OVERLAY -->
 <div class="overlay" id="startOverlay">
   <div class="card">
-    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px">HR PAPERS — START</div>
+    <div style="font-family:'Press Start 2P'; margin-bottom:12px; color:var(--accent2); font-size:14px">CV, PLEASE — START</div>
     <div class="mini" style="margin-bottom:10px">Click Start to enable audio and initialize the terminal. Shortcuts: H/R/Space.</div>
     <div class="mini" style="display:grid; gap:8px; text-align:left">
       <label>Game Mode:
@@ -264,7 +264,7 @@
     <div class="mini">
       <ol style="margin:0 0 10px 18px">
         <li><strong>Read the email + CV</strong> in the center panel.</li>
-        <li><strong>Select the correct vacancy</strong> on the right (should match the applicant’s “Applied Role”).</li>
+        <li><strong>Select the correct vacancy</strong> on the right (should match the applicant's "Applied Role").</li>
         <li>Compare CV <strong>skills</strong> to <strong>Required Skills</strong> — each requirement shows <span class="match">OK</span>/<span class="mismatch">MISSING</span>.</li>
         <li>Check <strong>Day Rules</strong> (experience minimums, tech specifics, special events). The DISCREPANCIES panel is hidden by default to increase challenge — rely on the rules and your judgment.</li>
         <li><strong>Decide:</strong> HIRE if requirements and rules are satisfied; otherwise REJECT.</li>
@@ -277,7 +277,7 @@
         <li><strong>VIP</strong> — a referral that grants a bonus if hired for the exact role.</li>
         <li><strong>Legend</strong> — rare high performer; still must match role and rules.</li>
         <li><strong>Scandal</strong> — likely fake candidate; avoid hiring.</li>
-        <li><strong>CEO’s Nephew</strong> — nepotism pressure may appear in Day Rules.</li>
+        <li><strong>CEO's Nephew</strong> — nepotism pressure may appear in Day Rules.</li>
       </ul>
 
       <div style="margin:8px 0"><strong>Spam Filter</strong></div>
@@ -561,8 +561,22 @@
   let dayTimer=null, timeLeft=0; let quotas={}; let started=false;
   // currentDayCfg holds the active day configuration (DAYS entry or generated cfg for endless/challenge)
   let currentDayCfg = null;
-  let dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
-  let boss=100; let mode='career'; let rivals=true; let pressure=false; let lastApplicantAt=0; let stealThreshold=12; let officeLvl=1;
+  let dayStats = {hires:0, rejects:0, correct:0, mistakes:0, stolen:0};
+  let boss=100; let mode='career'; let rivals=true; let pressure=false; let lastApplicantAt=0; let stealThreshold=8; let officeLvl=1; // Reduced steal threshold for more frequent stealing
+  // timestamp (ms) when rival will attempt to steal the current candidate; 0 = none scheduled
+  let rivalStealAt = 0;
+  // Track game round for more randomization
+  let gameRound = 0;
+  // Track when player made a decision to prevent immediate stealing
+  let playerDecisionAt = 0;
+  // Helper: mark that the player acted / viewed the current applicant and schedule rival deadline
+  function touchLastApplicant(){
+    lastApplicantAt = Date.now();
+    // More frequent stealing: base time varies by game round but stays reasonable
+    const baseTime = stealThreshold + (gameRound * 1); // gentler scaling
+    const rndFactor = 0.2 + Math.random() * 1.0; // tighter range: 0.2x - 1.2x
+    rivalStealAt = lastApplicantAt + Math.round(baseTime * 1000 * rndFactor);
+  }
   const LEADER_KEY='hr_leaderboard_v1'; const ACHV_KEY='hr_achievements_v1';
   let achievements = JSON.parse(localStorage.getItem(ACHV_KEY)||'{}');
 
@@ -572,13 +586,25 @@
   // (removed early stub for `verdict` to avoid accidental calls to a placeholder)
   
   function setStats(){
-    el('left').textContent = Math.max(0, (applicants.length - idx));
-    const attempts = score + warnings; const acc = attempts? Math.round((score/attempts)*100):100;
-    el('acc').textContent = acc+"%"; el('warns').textContent = warnings; el('credits').textContent = credits; el('score').textContent = score; el('day').textContent = dayIndex+1; el('career').textContent = CAREER.score;
-    const qv = quotas[roleSelect.value]; el('quotaView').textContent = (qv===undefined? '—' : qv);
-    const bossEl = document.getElementById('boss'); if(bossEl) bossEl.textContent = Math.max(0, Math.min(100, Math.round(boss)));
-    const modeView = document.getElementById('modeView'); if(modeView) modeView.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
-    officeLvl = 1 + Math.floor(CAREER.score/50); const offEl = document.getElementById('officeLvl'); if(offEl) offEl.textContent = officeLvl;
+    if(mode === 'endless') {
+      // Endless mode: show candidates applied instead of left
+      el('left').textContent = idx; // Candidates processed so far
+      const attempts = score + warnings; const acc = attempts? Math.round((score/attempts)*100):100;
+      el('acc').textContent = acc+"%"; el('warns').textContent = warnings; el('credits').textContent = "∞"; el('score').textContent = score; el('day').textContent = "∞"; el('career').textContent = CAREER.score;
+      const qv = quotas[roleSelect.value]; el('quotaView').textContent = (qv===undefined? '—' : qv);
+      const bossEl = document.getElementById('boss'); if(bossEl) bossEl.textContent = Math.max(0, Math.min(100, Math.round(boss)));
+      const modeView = document.getElementById('modeView'); if(modeView) modeView.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+      officeLvl = 1 + Math.floor(CAREER.score/50); const offEl = document.getElementById('officeLvl'); if(offEl) offEl.textContent = officeLvl;
+    } else {
+      // Career mode: original logic
+      el('left').textContent = Math.max(0, (applicants.length - idx));
+      const attempts = score + warnings; const acc = attempts? Math.round((score/attempts)*100):100;
+      el('acc').textContent = acc+"%"; el('warns').textContent = warnings; el('credits').textContent = credits; el('score').textContent = score; el('day').textContent = dayIndex+1; el('career').textContent = CAREER.score;
+      const qv = quotas[roleSelect.value]; el('quotaView').textContent = (qv===undefined? '—' : qv);
+      const bossEl = document.getElementById('boss'); if(bossEl) bossEl.textContent = Math.max(0, Math.min(100, Math.round(boss)));
+      const modeView = document.getElementById('modeView'); if(modeView) modeView.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+      officeLvl = 1 + Math.floor(CAREER.score/50); const offEl = document.getElementById('officeLvl'); if(offEl) offEl.textContent = officeLvl;
+    }
   }
 
   function renderRoleOptions(roles){ roleSelect.innerHTML=""; roles.forEach(r=>{ const opt=document.createElement('option'); opt.value=r; opt.textContent=r; roleSelect.appendChild(opt); }); }
@@ -599,7 +625,20 @@
   }
 
   function renderApplicant(){
-     if(idx>=applicants.length){ endDay(); return; }
+     if(idx>=applicants.length){ 
+       if(mode === 'endless') {
+         // Generate new batch of applicants for endless mode
+         const allRoles = Object.keys(VACANCIES);
+         const count = 6 + Math.floor(Math.random()*4);
+         const newApplicants = Array.from({length: count}, ()=> genApplicant(allRoles.slice(0).sort(()=>Math.random()-0.5).slice(0, Math.min(8, allRoles.length)), 0.4));
+         applicants = newApplicants;
+         idx = 0;
+         renderRoleOptions(allRoles.slice(0).sort(()=>Math.random()-0.5).slice(0, Math.min(8, allRoles.length)));
+       } else {
+         endDay(); 
+         return; 
+       }
+     }
      const c = applicants[idx];
      // Defensive rendering to avoid runtime errors (prevents freeze on missing data)
      const fromName = el('fromName'); if(fromName) fromName.textContent = c.name || '—';
@@ -617,7 +656,24 @@
      const cvCerts = el('cvCerts'); if(cvCerts) cvCerts.textContent = (Array.isArray(c.certs) && c.certs.length) ? c.certs.join(', ') : '—';
      const cvFlags = el('cvFlags'); if(cvFlags) cvFlags.textContent = (Array.isArray(c.redFlags) && c.redFlags.length) ? c.redFlags.join(', ') : '—';
      const imgEl = el('portraitImg'); if(imgEl){ imgEl.src = c.img || ''; imgEl.alt = `Avatar of ${c.name || '—'}`; }
-     roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.'; lastApplicantAt=Date.now(); setStats();
+     roleSelect.value=c.applyFor; renderReqs(roleSelect.value); updateDiff(); stamp.className='stamp'; 
+     
+     // Show steal risk warning for attractive candidates
+     const priority = getCandidateStealPriority(c);
+     if(priority > 0) {
+       const riskLevel = priority === 3 ? 'HIGH' : priority === 2 ? 'MEDIUM' : 'LOW';
+       el('status').textContent=`Evaluate against the correct vacancy, quotas and day rules. ⚠️ Steal risk: ${riskLevel}`;
+     } else {
+       el('status').textContent='Evaluate against the correct vacancy, quotas and day rules.';
+     }
+     // mark the moment the player saw this applicant and schedule rival steal
+     lastApplicantAt = Date.now();
+     playerDecisionAt = 0; // Reset player decision tracking for new applicant
+     // schedule rival steal with more frequent timing
+     const baseTime = stealThreshold + (gameRound * 1);
+     const rndFactor = 0.2 + Math.random() * 1.0;
+     rivalStealAt = lastApplicantAt + Math.round(baseTime * 1000 * rndFactor);
+     setStats();
    }
 
   function missingFor(candidate, role){
@@ -650,20 +706,91 @@
   }
 
   // Safe salary calculation used when hiring (defaults if role missing)
-  function salaryOf(role){
-    try{
-      const reqCount = VACANCIES[role] && Array.isArray(VACANCIES[role].required) ? VACANCIES[role].required.length : 0;
-      return 10 + 5 * reqCount;
-    }catch(e){
-      return 10;
-    }
+  // Safe salary calculation used when hiring (defaults if role missing)
+function salaryOf(role){
+  try{
+    const reqCount = VACANCIES[role] && Array.isArray(VACANCIES[role].required)
+      ? VACANCIES[role].required.length
+      : 0;
+    return 10 + 5 * reqCount;
+  }catch(e){
+    return 10;
   }
-+
-  function isAttractive(candidate){
-    const missingApplied = missingFor(candidate, candidate.applyFor);
-    const extra = (currentDayCfg && typeof currentDayCfg.check === 'function') ? currentDayCfg.check(candidate, candidate.applyFor) : (DAYS[dayIndex] && typeof DAYS[dayIndex].check === 'function' ? DAYS[dayIndex].check(candidate, candidate.applyFor) : []);
-    return missingApplied.length===0 && extra.length===0;
+}
+
+// --- Credit fine calculation based on candidate characteristics ---
+function calculateCreditFine(candidate){
+  if(!candidate) return 20; // default fine
+  
+  let fine = 20; // base fine
+  
+  // Add fines based on candidate events/characteristics
+  switch(candidate.event) {
+    case 'ceoNephew':
+      fine += 25; // "CEO mentioned this candidate earlier today" - higher penalty
+      break;
+    case 'legend':
+      fine += 35; // "Rumored high performer, unusual background" - highest penalty
+      break;
+    case 'vip':
+      fine += 30; // "VIP referral — potential bonus" - high penalty
+      break;
+    case 'scandal':
+      fine += 40; // "Unusual paperwork, proceed carefully" - very high penalty
+      break;
   }
+  
+  // Check if all skills are OK - if so, increase the fine significantly
+  const missingApplied = missingFor(candidate, candidate.applyFor);
+  const extra = (currentDayCfg && typeof currentDayCfg.check === 'function')
+    ? currentDayCfg.check(candidate, candidate.applyFor)
+    : (DAYS[dayIndex] && typeof DAYS[dayIndex].check === 'function'
+        ? DAYS[dayIndex].check(candidate, candidate.applyFor)
+        : []);
+  
+  if(missingApplied.length === 0 && extra.length === 0) {
+    fine = Math.round(fine * 1.5); // 50% increase instead of doubling
+  }
+  
+  return fine;
+}
+
+// --- Rival helper: get candidate steal priority (higher = more likely to be stolen) ---
+function getCandidateStealPriority(candidate){
+  if(!candidate) return 0;
+  
+  const missingApplied = missingFor(candidate, candidate.applyFor);
+  const extra = (currentDayCfg && typeof currentDayCfg.check === 'function')
+    ? currentDayCfg.check(candidate, candidate.applyFor)
+    : (DAYS[dayIndex] && typeof DAYS[dayIndex].check === 'function'
+        ? DAYS[dayIndex].check(candidate, candidate.applyFor)
+        : []);
+  
+  // Priority 3: Key candidates (VIP, Legend, CEO's nephew) with all skills OK
+  if((candidate.event === 'vip' || candidate.event === 'legend' || candidate.event === 'ceoNephew') && 
+     missingApplied.length === 0 && extra.length === 0) {
+    return 3;
+  }
+  
+  // Priority 2: Candidates with all skills OK (no missing skills, no rule violations)
+  if(missingApplied.length === 0 && extra.length === 0) {
+    return 2;
+  }
+  
+  // Priority 1: Candidates with some skills but not perfect
+  if(missingApplied.length <= 1 && extra.length <= 1) {
+    return 1;
+  }
+  
+  // Priority 0: Not attractive
+  return 0;
+}
+
+// --- Rival helper: is this candidate worth stealing? ---
+function isAttractive(candidate){
+  return getCandidateStealPriority(candidate) > 0;
+}
+
 
   /* ===================== Spam filter & Leaderboard helpers ===================== */
   function runSpamFilter(){
@@ -673,16 +800,29 @@
 
     // If visible letter is spam -> immediate bonus and advance (no cost)
     if(c.event === 'spam'){
-      const bonus = 10;
+      const bonus = 20; // Increased from 10
       dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
+      
+      // Time reward for endless mode
+      if(mode === 'endless' && timeLeft > 0) {
+        const timeReward = 2; // Add 2 seconds for spam filter
+        timeLeft += timeReward;
+        updateTimeUi();
+      }
+      
       resultsLog.push({
         day: dayIndex+1, name: c.name, email: c.email, id: c.id, age: c.age, role: c.applyFor, chosen: roleSelect.value,
         decision: 'spam-filtered', correct: true, years: c.years, skills: (Array.isArray(c.skills)?c.skills.join('; '):''), certs: (Array.isArray(c.certs)?c.certs.join('; '):''),
         flags: (Array.isArray(c.redFlags)?c.redFlags.join('; '):''), note: c.note, event: c.event||'', missing: missingFor(c, c.applyFor).join('; '),
         violations: (currentDayCfg && currentDayCfg.check) ? currentDayCfg.check(c, c.applyFor).join('; ') : (DAYS[dayIndex] && DAYS[dayIndex].check ? DAYS[dayIndex].check(c, c.applyFor).join('; ') : ''), creditsAfter: credits, timeLeft
       });
-      el('status').textContent = `Spam filter removed current spam letter — bonus +${bonus} credits.`;
-      stamp.textContent = 'REJECTED'; stamp.className = 'stamp no show'; stampFx(true);
+      el('status').textContent = `Spam filter removed current spam letter — bonus +${bonus} credits.${mode === 'endless' ? ' +2s time' : ''}`;
+      stamp.textContent = 'SPAM'; stamp.className = 'stamp no show'; stampFx(true);
+      
+      // Mark that player made a decision to prevent immediate stealing
+      playerDecisionAt = Date.now();
+      rivalStealAt = 0; // Cancel any pending steal attempts
+      
       applicants.splice(idx, 1);
       saveCareer(); setStats();
       setTimeout(()=>{
@@ -705,7 +845,12 @@
     saveCareer(); setStats();
     if(removed){
       el('status').textContent = `Spam filter removed ${removed} spam/malicious CV(s).`;
-      setTimeout(()=>{ if(idx>=applicants.length) endDay(); else renderApplicant(); }, 350);
+      // Show SPAM stamp briefly when spam is detected in lookahead
+      stamp.textContent = 'SPAM'; stamp.className = 'stamp no show'; stampFx(true);
+      setTimeout(()=>{ 
+        stamp.className = 'stamp'; // Hide stamp
+        if(idx>=applicants.length) endDay(); else renderApplicant(); 
+      }, 350);
     } else {
       el('status').textContent = 'No spam detected.';
     }
@@ -733,8 +878,16 @@
         endGameNow("Your computer was infected with a virus. Be careful next time. But for today, you are fired.");
         return;
       } else {
-        const bonus = 15;
+        const bonus = 30; // Increased from 15
         dayStats.rejects++; dayStats.correct++; score++; CAREER.score++; credits += bonus; CAREER.credits += bonus;
+        
+        // Time reward for endless mode
+        if(mode === 'endless' && timeLeft > 0) {
+          const timeReward = 5; // Add 5 seconds for virus rejection
+          timeLeft += timeReward;
+          updateTimeUi();
+        }
+        
         resultsLog.push({
           day: dayIndex+1,
           name: c.name,
@@ -756,8 +909,13 @@
           creditsAfter: credits,
           timeLeft
         });
-        el('status').textContent = `🛡️ Malicious email detected — bonus +${bonus} credits.`;
+        el('status').textContent = `🛡️ Malicious email detected — bonus +${bonus} credits.${mode === 'endless' ? ' +5s time' : ''}`;
         stamp.textContent = 'REJECTED'; stamp.className='stamp no show'; stampFx(true);
+        
+        // Mark that player made a decision to prevent immediate stealing
+        playerDecisionAt = Date.now();
+        rivalStealAt = 0; // Cancel any pending steal attempts
+        
         saveCareer(); setStats();
         setTimeout(()=>{ idx++; renderApplicant(); }, 650);
         return;
@@ -791,12 +949,25 @@
         });
         el('status').textContent = `❗ You hired a spam letter — penalty -${penalty} credits.`;
         stamp.textContent = 'HIRED'; stamp.className='stamp no show'; wrongFx();
+        
+        // Mark that player made a decision to prevent immediate stealing
+        playerDecisionAt = Date.now();
+        rivalStealAt = 0; // Cancel any pending steal attempts
+        
         saveCareer(); setStats();
         setTimeout(()=>{ idx++; renderApplicant(); }, 650);
         return;
       } else {
-        const reward = 10;
+        const reward = 20; // Increased from 10
         score++; dayStats.correct++; dayStats.rejects++; credits += reward; CAREER.score++; CAREER.credits += reward;
+        
+        // Time reward for endless mode
+        if(mode === 'endless' && timeLeft > 0) {
+          const timeReward = 2; // Add 2 seconds for spam rejection
+          timeLeft += timeReward;
+          updateTimeUi();
+        }
+        
         resultsLog.push({
           day: dayIndex+1,
           name: c.name,
@@ -818,8 +989,13 @@
           creditsAfter: credits,
           timeLeft
         });
-        el('status').textContent = `Spam rejected — +${reward} credits.`;
+        el('status').textContent = `Spam rejected — +${reward} credits.${mode === 'endless' ? ' +2s time' : ''}`;
         stamp.textContent = 'REJECTED'; stamp.className='stamp ok show'; stampFx(true);
+        
+        // Mark that player made a decision to prevent immediate stealing
+        playerDecisionAt = Date.now();
+        rivalStealAt = 0; // Cancel any pending steal attempts
+        
         saveCareer(); setStats();
         setTimeout(()=>{ idx++; renderApplicant(); }, 650);
         return;
@@ -834,14 +1010,50 @@
     if(decision===false && (missingApplied.length===0 && extraRules.length===0)) correct=false;
     if(decision===true && c.event==='scandal') correct=false;
     if(correct){
-      score++; dayStats.correct++; credits += 10; CAREER.score++; CAREER.credits += 10; boss = Math.min(100, boss+2); bossFx();
+      score++; dayStats.correct++; credits += 15; CAREER.score++; CAREER.credits += 15; boss = Math.min(100, boss+2); bossFx();
+      
+              // Time reward for endless mode
+        if(mode === 'endless' && timeLeft > 0) {
+          let timeReward = 3; // Base 3 seconds for correct decisions
+          
+          // Additional time rewards for special candidates
+          if(c.event === 'vip') {
+            timeReward += 2; // +2s for VIP
+          } else if(c.event === 'legend') {
+            timeReward += 3; // +3s for Legend
+          } else if(c.event === 'ceoNephew') {
+            timeReward += 1; // +1s for CEO's nephew
+          }
+          
+          timeLeft += timeReward;
+          updateTimeUi();
+        }
+      
       if(decision===true){
         const sal = salaryOf(c.applyFor); credits -= sal; CAREER.credits -= sal; if(quotas[c.applyFor]!==undefined){ quotas[c.applyFor]--; }
-        if(c.event==='vip'){ credits += 10; CAREER.credits += 10; vipFx(); }
-        const netGain = 10 - sal + (c.event==='vip' ? 10 : 0);
-        el('status').textContent = `✅ Good call. +10 credits earned. Salary: -${sal} cr. Net: ${netGain >= 0 ? '+' : ''}${netGain} cr.`;
+        
+        // Enhanced bonuses for special candidates
+        let specialBonus = 0;
+        let bonusMessage = '';
+        
+        if(c.event==='vip'){
+          specialBonus = 35; // Increased from 25
+          bonusMessage = ' +35 VIP bonus';
+          vipFx();
+        } else if(c.event==='legend'){
+          specialBonus = 50; // Increased from 35
+          bonusMessage = ' +50 Legend bonus';
+        } else if(c.event==='ceoNephew'){
+          specialBonus = 30; // Increased from 20
+          bonusMessage = ' +30 CEO bonus';
+        }
+        
+        credits += specialBonus; CAREER.credits += specialBonus;
+        const netGain = 15 - sal + specialBonus; // Updated to use 15 base reward
+        const timeBonus = mode === 'endless' ? (c.event === 'vip' ? ' +5s time' : c.event === 'legend' ? ' +6s time' : c.event === 'ceoNephew' ? ' +4s time' : ' +3s time') : '';
+        el('status').textContent = `✅ Good call. +15 credits earned. Salary: -${sal} cr.${bonusMessage}. Net: ${netGain >= 0 ? '+' : ''}${netGain} cr.${timeBonus}`;
       } else {
-        el('status').textContent = '✅ Good call. +10 credits earned.';
+        el('status').textContent = `✅ Good call. +15 credits earned.${mode === 'endless' ? ' +3s time' : ''}`;
       }
       stamp.textContent = decision? 'HIRED' : 'REJECTED'; stamp.className='stamp ' + (decision? 'ok':'no') + ' show'; stampFx(decision);
     } else {
@@ -874,6 +1086,11 @@
       timeLeft
     });
     if(credits<=0){ endGameNow("Now it's your turn to find a new job. You were fired."); return; }
+    
+    // Mark that player made a decision to prevent immediate stealing
+    playerDecisionAt = Date.now();
+    rivalStealAt = 0; // Cancel any pending steal attempts
+    
     saveCareer(); setStats();
     setTimeout(()=>{ idx++; renderApplicant(); }, 650);
   }
@@ -886,15 +1103,26 @@
     clearInterval(dayTimer);
     // If time ran out AND there are still applicants left -> immediate firing
     if (timedOut && idx < applicants.length) {
-      endGameNow("You couldn’t manage your queue in time. You are fired.");
-      return;
+      if(mode === 'endless') {
+        // In endless mode, show final score and end game
+        endGameNow(`Endless mode ended! Final score: ${score} correct decisions.`);
+        return;
+      } else {
+        endGameNow("You couldn't manage your queue in time. You are fired.");
+        return;
+      }
     }
-    showSummary();
+    if(mode === 'endless') {
+      // In endless mode, just continue with new batch
+      startDay();
+    } else {
+      showSummary();
+    }
   }
 
   // --- showSummary shows completion + quota preview ---
   function showSummary(){
-    const total = (dayStats.hires + dayStats.rejects) || 1;
+    const total = (dayStats.hires + dayStats.rejects + dayStats.stolen) || 1;
     const s = document.getElementById('summaryOverlay');
     const b = document.getElementById('summaryBody');
     const pct = (n)=>Math.round((n/total)*100);
@@ -904,7 +1132,7 @@
     const quotaBonus = (unmet.length===0) ? 30 : -(10 * unmet.length);
 
     b.innerHTML = `
-      <div>Hires: ${dayStats.hires} • Rejects: ${dayStats.rejects} • Correct: ${dayStats.correct} • Mistakes: ${dayStats.mistakes}</div>
+      <div>Hires: ${dayStats.hires} • Rejects: ${dayStats.rejects} • Correct: ${dayStats.correct} • Mistakes: ${dayStats.mistakes} • Stolen: ${dayStats.stolen}</div>
       <div style="margin-top:10px">Accuracy: <strong>${pct(dayStats.correct)}%</strong></div>
 
       <div class="mini" style="margin:10px 0 4px">Hires</div>
@@ -916,6 +1144,9 @@
       <div class="mini" style="margin:10px 0 4px">Correct vs Mistakes</div>
       <div class="bar"><div style="width:${pct(dayStats.correct)}%; background:#6ed06e"></div></div>
       <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.mistakes)}%; background:#e25b5b"></div></div>
+
+      <div class="mini" style="margin:10px 0 4px">Stolen Candidates</div>
+      <div class="bar" style="background:#3a2b25"><div style="width:${pct(dayStats.stolen)}%; background:#e27a52"></div></div>
 
       <div class="mini" style="margin-top:12px"><strong>End-of-day bonuses</strong></div>
       <div class="mini">• Completion bonus: <strong>+${DAY_COMPLETE_BONUS}</strong> credits</div>
@@ -973,9 +1204,9 @@
      let cfg = DAYS[dayIndex];
     if(mode==='endless'){
       const allRoles = Object.keys(VACANCIES);
-      const count = 8 + Math.floor(Math.random()*5);
-           const t = 90 + Math.floor(Math.random()*60);
-      cfg = { time: t, applicants: count, roles: allRoles.slice(0).sort(()=>Math.random()-0.5).slice(0, Math.min(10, allRoles.length)), quotas:{}, rules:["Endless — keep going!"], check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate'); return out; } };
+      const count = 6 + Math.floor(Math.random()*4); // Smaller batches for endless
+      const t = 45 + Math.floor(Math.random()*30); // Much shorter time for endless mode
+      cfg = { time: t, applicants: count, roles: allRoles.slice(0).sort(()=>Math.random()-0.5).slice(0, Math.min(8, allRoles.length)), quotas:{}, rules:["Endless — survive as long as possible!"], check:(c,chosen)=>{ const out=[]; if(c.event==='spam') out.push('Spam CV'); if(c.event==='vip' && chosen!==c.applyFor) out.push('VIP requires exact role'); if(c.event==='scandal') out.push('Potential fake candidate'); return out; } };
     }
     if(mode==='challenge'){
       cfg = DAYS[Math.min(dayIndex, DAYS.length-1)];
@@ -985,25 +1216,112 @@
     if (pressure && dayIndex === 0) { cfg.time = 60; }
     // Save active day config for safe access in checks
     currentDayCfg = cfg;
+    // Update game round for randomization
+    gameRound = dayIndex;
     const miss = mode==='challenge' ? 0.55 : 0.4;
     applicants = Array.from({length: cfg.applicants}, ()=> genApplicant(cfg.roles, miss));
     idx = 0; quotas = {...cfg.quotas};
-    dayStats = {hires:0, rejects:0, correct:0, mistakes:0};
+    dayStats = {hires:0, rejects:0, correct:0, mistakes:0, stolen:0};
     renderRoleOptions(cfg.roles); renderRuleList(Math.min(dayIndex, DAYS.length-1));
     timeLeft = cfg.time; updateTimeUi(); clearInterval(dayTimer);
     const tickMs = pressure? 800 : 1000;
     dayTimer = setInterval(()=>{
-      timeLeft--; updateTimeUi();
-      if(rivals && idx<applicants.length){
-        const elapsed = (Date.now()-lastApplicantAt)/1000;
-        if(elapsed>stealThreshold){
-          const c = applicants[idx];
-          if(isAttractive(c)){ stealFx(); el('status').textContent = '⏳ Rival HR hired this candidate first!'; dayStats.rejects++; boss = Math.max(0, boss-3); credits -= 5; CAREER.credits -= 5; idx++; renderApplicant(); }
-          else { lastApplicantAt=Date.now(); }
+      // timer tick
+      timeLeft--;
+      updateTimeUi();
+
+      // rivals logic (schedule/execute steal)
+      if (rivals && idx < applicants.length) {
+        const c = applicants[idx];
+        // ensure we have a scheduled steal deadline for current applicant
+        if (!rivalStealAt) {
+          const baseTime = stealThreshold + (gameRound * 1);
+          const rndFactor = 0.2 + Math.random() * 1.0;
+          rivalStealAt = (lastApplicantAt || Date.now()) + Math.round(baseTime * 1000 * rndFactor);
         }
-      }
-      if(timeLeft<=0){ clearInterval(dayTimer); endDay(true); }
-    }, tickMs);
+
+        if (rivalStealAt && Date.now() >= rivalStealAt) {
+          // Check if player recently made a decision (within last 2 seconds)
+          const timeSinceDecision = Date.now() - playerDecisionAt;
+          if (timeSinceDecision < 2000) {
+            // Player recently made a decision, postpone stealing
+            const baseTime = stealThreshold + (gameRound * 1);
+            const rndFactor = 0.2 + Math.random() * 1.0;
+            rivalStealAt = Date.now() + Math.round(baseTime * 1000 * rndFactor);
+            return;
+          }
+          
+          // Get candidate priority and calculate steal chance based on priority
+          const priority = getCandidateStealPriority(c);
+          let stealChance = 0;
+          
+          if(priority === 3) {
+            // Key candidates: very high chance (85-95%)
+            stealChance = 0.85 + (Math.random() * 0.1);
+          } else if(priority === 2) {
+            // Perfect candidates: high chance (70-85%)
+            stealChance = 0.7 + (Math.random() * 0.15);
+          } else if(priority === 1) {
+            // Good candidates: medium chance (40-60%)
+            stealChance = 0.4 + (Math.random() * 0.2);
+          }
+          
+          const shouldSteal = Math.random() < stealChance;
+          
+          // only attempt steal when candidate is attractive
+          if (c && priority > 0 && shouldSteal) {
+            stealFx();
+            const fine = calculateCreditFine(c);
+            const st = el('status');
+            if(st) st.textContent = `❗ Candidate was stolen by rivals. Fine: -${fine} credits.`;
+            dayStats.rejects++;
+            dayStats.stolen++; // Track stolen candidates
+            boss = Math.max(0, boss - 3);
+            credits = Math.max(0, credits - fine);
+            if(typeof CAREER !== 'undefined') CAREER.credits = Math.max(0, (CAREER.credits||0) - fine);
+ 
+             // log the rival steal
+             resultsLog.push({
+               day: dayIndex+1,
+               name: c.name, email: c.email, id: c.id, age: c.age,
+               role: c.applyFor, chosen: roleSelect ? roleSelect.value : '',
+               decision: 'rival-stole', correct: true,
+               years: c.years,
+               skills: Array.isArray(c.skills)? c.skills.join('; ') : '',
+               certs: Array.isArray(c.certs)? c.certs.join('; ') : '',
+               flags: Array.isArray(c.redFlags)? c.redFlags.join('; ') : '',
+               note: c.note, event: c.event || '',
+               missing: missingFor(c, c.applyFor).join('; '),
+               violations: (currentDayCfg && currentDayCfg.check) ? currentDayCfg.check(c, c.applyFor).join('; ') : '',
+               creditsAfter: credits,
+               timeLeft
+             });
+ 
+             // advance queue
+            idx++;
+            lastApplicantAt = Date.now();
+            rivalStealAt = 0;
+            // show steal message for a short moment before rendering next applicant
+            setTimeout(()=>{
+              if (idx >= applicants.length) { clearInterval(dayTimer); endDay(); return; }
+              else { renderApplicant(); touchLastApplicant(); }
+            }, 900);
+           } else {
+             // candidate not attractive or steal chance failed — schedule next steal attempt
+             const baseTime = stealThreshold + (gameRound * 1); // Reduced scaling for more frequent attempts
+             const rndFactor = 0.2 + Math.random() * 1.0; // Tighter range for more predictable timing
+             rivalStealAt = Date.now() + Math.round(baseTime * 1000 * rndFactor);
+           }
+         }
+       }
+ 
+       // end-of-day handling
+       if(timeLeft <= 0){
+         clearInterval(dayTimer);
+         endDay(true);
+         return;
+       }
+     }, tickMs);
     el('btnHire').disabled=false; el('btnReject').disabled=false; roleSelect.disabled=false;
     el('status').textContent = `Day ${dayIndex+1} — Meet quotas before time runs out.`;
     document.getElementById('summaryOverlay').style.display='none';
@@ -1034,7 +1352,7 @@ window.__startGame = function(){
   try{
     ensureAudio(); if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume().catch(()=>{}); }
     started = true; startOverlay.style.display='none';
-    mode = (modeSelect && modeSelect.value)||'career'; rivals = optRivals? optRivals.checked : true; pressure = optPressure? optPressure.checked : false; stealThreshold = pressure? 9 : 12; const mv=document.getElementById('modeView'); if(mv) mv.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+    mode = (modeSelect && modeSelect.value)||'career'; rivals = optRivals? optRivals.checked : true; pressure = optPressure? optPressure.checked : false; stealThreshold = pressure? 6 : 8; const mv=document.getElementById('modeView'); if(mv) mv.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
     if(window.requestAnimationFrame){ requestAnimationFrame(()=>{ try{ startDay(); }catch(err){ console.error('startDay error', err); el('status').textContent='Start failed: '+err; } }); }
     else { setTimeout(()=>{ try{ startDay(); }catch(err){ console.error('startDay error', err); el('status').textContent='Start failed: '+err; } }, 0); }
   }catch(e){ console.error('StartGame error', e); el('status').textContent='Start error: '+e; }
