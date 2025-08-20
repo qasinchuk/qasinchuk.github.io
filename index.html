@@ -266,22 +266,56 @@
         <li><strong>Read the email + CV</strong> in the center panel.</li>
         <li><strong>Select the correct vacancy</strong> on the right (should match the applicant’s “Applied Role”).</li>
         <li>Compare CV <strong>skills</strong> to <strong>Required Skills</strong> — each requirement shows <span class="match">OK</span>/<span class="mismatch">MISSING</span>.</li>
-        <li>Check <strong>Day Rules</strong> (experience minimums, tech specifics, special events).</li>
-        <li><strong>Decide:</strong> HIRE if all required skills + rules are satisfied and quotas allow; otherwise REJECT.</li>
+        <li>Check <strong>Day Rules</strong> (experience minimums, tech specifics, special events). The DISCREPANCIES panel is hidden by default to increase challenge — rely on the rules and your judgment.</li>
+        <li><strong>Decide:</strong> HIRE if requirements and rules are satisfied; otherwise REJECT.</li>
       </ol>
-      <div style="margin:10px 0 4px"><strong>Game Modes</strong></div>
+
+      <div style="margin:10px 0 4px"><strong>Events & Special Cases</strong></div>
       <ul style="margin:0 0 10px 18px">
-        <li><strong>Career</strong>: Classic day-by-day with quotas and summary.</li>
-        <li><strong>Endless</strong>: Randomized waves — survive as long as you can.</li>
-        <li><strong>Challenge</strong>: Stricter timers, more applicants, more missing skills.</li>
+        <li><strong>Spam</strong> — frequent bulk submissions. Rejecting spam grants a reward; hiring spam applies a heavy penalty (credits + warnings).</li>
+        <li><strong>Virus / Harassment emails</strong> — suspicious attachments/messages. Reject to earn a larger bonus; hiring one immediately ends the run (game over).</li>
+        <li><strong>VIP</strong> — a referral that grants a bonus if hired for the exact role.</li>
+        <li><strong>Legend</strong> — rare high performer; still must match role and rules.</li>
+        <li><strong>Scandal</strong> — likely fake candidate; avoid hiring.</li>
+        <li><strong>CEO’s Nephew</strong> — nepotism pressure may appear in Day Rules.</li>
       </ul>
-      <div style="margin:8px 0"><strong>Boss & Rivals</strong>: Boss satisfaction rises on correct calls and drops on mistakes. If <em>Rivals</em> are enabled, waiting too long on a strong candidate may result in a rival auto-hiring them.</div>
-      <div style="margin:8px 0"><strong>Economy</strong>: Correct decisions +10 credits; mistakes −10 (adds a warning). <em>Each hire costs salary</em> = 10 + 5×(# required skills). <em>VIP</em> hires grant a small bonus. <em>Scandal/fake</em> hires cause heavy penalties. Meeting all quotas yields a day-end bonus.</div>
-      <div style="margin:8px 0"><strong>Events</strong>: <em>Spam</em> (reject), <em>CEO’s Nephew</em> (nepotism pressure), <em>Legend</em> (great candidate — still must match role), <em>VIP</em> (bonus on proper hire), <em>Scandal</em> (fake candidate — avoid hiring).</div>
-      <div style="margin:8px 0"><strong>Spam Filter</strong>: Button in footer. Costs 10 credits to scan the next few CVs and remove spam automatically.</div>
-      <div style="margin:8px 0"><strong>Leaderboard & Achievements</strong>: Your top runs are saved locally. Use the Leaderboard button to view standings. Some achievements unlock as you progress.</div>
-      <div style="margin:8px 0"><strong>Hotkeys</strong>: H = Hire, R = Reject, <kbd>Space</kbd> = quick Reject/Next, <kbd>?</kbd> = open/close Help.</div>
+
+      <div style="margin:8px 0"><strong>Spam Filter</strong></div>
+      <ul style="margin:0 0 10px 18px">
+        <li>Costs 10 credits to run.</li>
+        <li>If the currently visible letter is spam, using the Spam Filter immediately grants a bonus and advances to the next applicant (or ends the day if it was the last).</li>
+        <li>Otherwise the filter scans a short look‑ahead window and removes spam/malicious CVs without the immediate bonus.</li>
+      </ul>
+
+      <div style="margin:8px 0"><strong>Time Pressure & Modes</strong></div>
+      <ul style="margin:0 0 10px 18px">
+        <li><strong>Career</strong>: Day-by-day with quotas and summaries.</li>
+        <li><strong>Endless</strong>: Randomized waves — survive as long as you can.</li>
+        <li><strong>Challenge</strong>: Shorter timers and more applicants.</li>
+        <li><strong>Extra time pressure</strong> (checkbox on Start): when enabled, Day 1 is shortened to 60 seconds for a high‑pressure start.</li>
+      </ul>
+
+      <div style="margin:8px 0"><strong>Economy & Scoring</strong></div>
+      <ul style="margin:0 0 10px 18px">
+        <li>Correct decisions: +10 credits.</li>
+        <li>Mistakes: −10 credits and a warning.</li>
+        <li>Hiring costs salary = <code>10 + 5 × (# required skills)</code> (deducted when hire is processed).</li>
+        <li>Rejecting spam grants a small reward; hiring spam causes a larger penalty.</li>
+        <li>Rejecting a virus email grants a bonus; hiring a virus email immediately triggers game over.</li>
+        <li>Meeting quotas and finishing the day awards completion bonuses.</li>
+      </ul>
+
+      <div style="margin:8px 0"><strong>Rivals & Boss</strong></div>
+      <div style="margin:0 0 10px 18px">If Rivals are enabled, waiting too long on strong candidates may cause a rival to auto-hire them. Boss satisfaction rises with correct calls and drops on mistakes.</div>
+
+      <div style="margin:8px 0"><strong>UI & Controls</strong></div>
+      <ul style="margin:0 0 10px 18px">
+        <li>Toggle sound and volume in the header.</li>
+        <li>Hotkeys: <kbd>H</kbd>=Hire, <kbd>R</kbd>=Reject, <kbd>Space</kbd>=Quick Reject/Next, <kbd>?</kbd>=Help.</li>
+        <li>Use EXPORT to save a CSV log of decisions; leaderboard saved to localStorage.</li>
+      </ul>
     </div>
+
     <div style="text-align:center; margin-top:12px"><button class="btn" id="btnCloseHelp">CLOSE</button></div>
   </div>
 </div>
